@@ -1,0 +1,89 @@
+{
+  "migIndex": 1,
+  "data": [
+    {
+      "path": "assets/fonts/AndadaPro-ExtraBold.ttf",
+      "sha1": "c5a2d7824b616b5fd336bdd3e9befcad0a384643"
+    },
+    {
+      "path": "assets/fonts/AndadaPro-Italic.ttf",
+      "sha1": "d5b2b303664473c7944d4b0b3e65b0cbf6cb44ec"
+    },
+    {
+      "path": "assets/fonts/AndadaPro-Medium.ttf",
+      "sha1": "0931aee97d199f06931c2bd718085d87236aa98a"
+    },
+    {
+      "path": "assets/fonts/AndadaPro-Regular.ttf",
+      "sha1": "695eb324be1b5b2218e31f7b56ccdc0e1d1de9d1"
+    },
+    {
+      "path": "assets/fonts/AndadaPro-SemiBold.ttf",
+      "sha1": "9b587ec418f7385caf78fd7d58a23de8ca21b1ce"
+    },
+    {
+      "path": "assets/fonts/digital-7 (italic).ttf",
+      "sha1": "ba2f68370fa15d2b855d2bf6851d21b13b70dc87"
+    },
+    {
+      "path": "assets/fonts/digital-7 (mono).ttf",
+      "sha1": "dabe381cb194d25d64f7f32d8925c1509b95ec08"
+    },
+    {
+      "path": "assets/fonts/digital-7.ttf",
+      "sha1": "7e1cf55ecbeaaa82465624ffb32b54e85453325c"
+    },
+    {
+      "path": "assets/fonts/DS-DIGI.TTF",
+      "sha1": "1ce1ed312b41a237cb253c706290c0fd7287859d"
+    },
+    {
+      "path": "assets/fonts/DS-DIGIB.TTF",
+      "sha1": "126da1a82a1491b962982cb0be5f3d8e0b23d077"
+    },
+    {
+      "path": "assets/fonts/DS-DIGII.TTF",
+      "sha1": "d12ff73c13a5346032cdd0c737f9ed27e693a6ff"
+    },
+    {
+      "path": "assets/fonts/DS-DIGIT.TTF",
+      "sha1": "44b13f9de8eee6c1aee3601c1a7f6d662b401616"
+    },
+    {
+      "path": "assets/fonts/PlaywriteGBS-ExtraLight.ttf",
+      "sha1": "cc621250d75c349cb2759ff504853ddbf6ed3da7"
+    },
+    {
+      "path": "assets/fonts/PlaywriteGBS-ExtraLightItalic.ttf",
+      "sha1": "5049ed0826bd65476758b7b9021432969b661c19"
+    },
+    {
+      "path": "assets/fonts/PlaywriteGBS-Italic.ttf",
+      "sha1": "3d98e6058b5a5781a9c0a5ae0963ce02ebac1425"
+    },
+    {
+      "path": "assets/fonts/PlaywriteGBS-Light.ttf",
+      "sha1": "02cbcfca1057efa4181f2ec73a8dd6122dded30e"
+    },
+    {
+      "path": "assets/fonts/PlaywriteGBS-LightItalic.ttf",
+      "sha1": "b304ec298ff9944d5b140eeaef2fa6d4242fc35b"
+    },
+    {
+      "path": "assets/fonts/PlaywriteGBS-Regular.ttf",
+      "sha1": "b657820f7717f1ca15cc99438a3db8064ca67c22"
+    },
+    {
+      "path": "assets/fonts/PlaywriteGBS-Thin.ttf",
+      "sha1": "3024caf9b3bb3867550e57431d4a82098d89176e"
+    },
+    {
+      "path": "assets/fonts/PlaywriteGBS-ThinItalic.ttf",
+      "sha1": "a2dd218e80c27e576f5b9003bfc25474c9d3ec07"
+    },
+    {
+      "path": "assets/fonts/Prociono-Regular.ttf",
+      "sha1": "04bd3f951796f9f2692a1ccdc222700ba475418a"
+    }
+  ]
+}
