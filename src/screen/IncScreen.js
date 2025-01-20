@@ -4,6 +4,7 @@ import Back from '../../assets/svg/drop.svg';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { closeRequest, getDetailOfCard } from '../service/ApiService';
 import FastImage from 'react-native-fast-image';
+import axios from 'axios';
 const IncScreen = () => {
     const navigation = useNavigation();
     const [version, setVersion] = useState(null);
@@ -14,7 +15,7 @@ const IncScreen = () => {
     const { item, color } = route.params;
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [selectedImage, setSelectedImage] = useState({ imageUrl: null, time: null });
-    console.log(route);
+    // console.log(route);
     const formatDateTime = (isoTime) => {
         try {
             const dateObj = new Date(isoTime);
@@ -38,32 +39,58 @@ const IncScreen = () => {
         setSelectedImage({ imageUrl, time: formattedTime });
         setIsModalVisible(true);
     };
+    const controller = new AbortController();
     useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const response = await getDetailOfCard(item.unique_id, item.imei);
-                setVersion(response.dataVersion[0]?.version);
-                const beforeItems = [];
-                const afterItems = [];
-                setWcc(response.wcc);
-              
-                response.data.forEach((dataItem) => {
-                    if (dataItem.type === 'Before' || !dataItem.type) {
-                        beforeItems.push(dataItem);
-                    } else if (dataItem.type === 'After') {
-                        afterItems.push(dataItem);
-                    }
-                });
-                setBeforeList(beforeItems);
-                setAfterList(afterItems);
-                console.log('Before List:', beforeItems);
-                console.log('After List:', afterItems);
-            } catch (error) {
-                console.error('Error fetching card details:', error);
+      const fetchData = async () => {
+        try {
+          const response = await getDetailOfCard(
+            item.unique_id,
+            item.imei,
+            controller.signal, // Pass the signal
+          );
+
+          // Update state with response data
+          console.log("api call success")
+          setVersion(response.dataVersion[0]?.version);
+          setWcc(response.wcc);
+
+          const beforeItems = [];
+          const afterItems = [];
+
+          response.data.forEach(dataItem => {
+            if (dataItem.type === 'Before' || !dataItem.type) {
+              beforeItems.push(dataItem);
+            } else if (dataItem.type === 'After') {
+              afterItems.push(dataItem);
             }
-        };
-        fetchData();
+          });
+
+          setBeforeList(beforeItems);
+          setAfterList(afterItems);
+
+          // console.log('Before List:', beforeItems);
+          // console.log('After List:', afterItems);
+        } catch (error) {
+          // Handle Axios request cancellations and other errors
+          if (axios.isCancel(error)) {
+            console.log('Request cancelled:', error.message);
+          } else {
+            Alert.alert('Error fetching card details:', error.message);
+          }
+        }
+      };
+
+      // Trigger the API call
+      fetchData();
+
+      // Cleanup function to cancel the request
+      return () => {
+        controller.abort(); // Cancel the request
+        console.log('API request cancelled.');
+      };
     }, [item]);
+
+
     const copyToClipboard = (text) => {
         Clipboard.setString(text);
         ToastAndroid.show('Copy', ToastAndroid.SHORT);

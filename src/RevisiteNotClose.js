@@ -10,7 +10,7 @@ const RevisiteNotClose = () => {
   const route = useRoute();
   const { data } = route.params;
   const [filteredData, setFilteredData] = useState([]);
-  console.log(data);
+  // console.log(data);
 
   useEffect(() => {
     setFilteredData(data);
@@ -30,10 +30,13 @@ const RevisiteNotClose = () => {
 
   const nav = (item) => {
     const color = '#00a7ff';
-    if (profile.designation?.toLowerCase() == 'technician')
-      navigation.navigate('IncScreen', { item, color });
-    else
-      navigation.navigate('IncTeam', { item, color });
+   if (
+     profile.designation?.toLowerCase() == 'technician' ||
+     profile.designation?.toLowerCase() == 'others'
+   ) {
+     navigation.navigate('IncScreen', {item, color});
+     //console.log(profile.designation?.toLowerCase());
+   } else navigation.navigate('IncTeam', {item, color});
   }
 
   const handleSearch = (query) => {

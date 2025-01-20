@@ -1,14 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
-    <!-- Allow cleartext traffic for local development -->
     <domain-config cleartextTrafficPermitted="true">
-        <!-- Use localhost for emulators -->
         <domain includeSubdomains="false">localhost</domain>
-        <!-- Emulator loopback IP for Android -->
         <domain includeSubdomains="false">10.0.2.2</domain>
-        <!-- Genymotion emulator loopback IP -->
         <domain includeSubdomains="false">10.0.3.2</domain>
-        <!-- Local network IP address (example: 192.168.1.102) -->
-        <domain includeSubdomains="false">192.168.1.155</domain>
+        <domain includeSubdomains="true">dashboard.shrotitele.com</domain>
+        <trust-anchors>
+            <certificates src="@raw/dashboard"/>
+        </trust-anchors>
     </domain-config>
 </network-security-config>

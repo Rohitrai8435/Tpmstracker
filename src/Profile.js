@@ -7,7 +7,7 @@ const { width, height } = Dimensions.get('window');
 const Profile = ({data}) => {
   const route = useRoute();
   const {profile} = route.params;
-  console.log(route);
+  // console.log(route);
   const navigation=useNavigation();
   const profileData = [
     { key: 'Name', value: profile.name ? profile.name.charAt(0).toUpperCase()+profile.name.slice(1) : 'Not Available' },

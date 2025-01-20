@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, {useEffect, useState} from 'react';
 import {
   StyleSheet,
   SafeAreaView,
@@ -12,12 +12,11 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import {KeyboardAwareScrollView} from 'react-native-keyboard-aware-scroll-view';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useNavigation } from '@react-navigation/native';
+import {useNavigation} from '@react-navigation/native';
 import logo from '../assets/account.png';
-import { getLogin } from './service/ApiService';
-
+import {getLogin} from './service/ApiService';
 export default function LoginPage() {
   const navigation = useNavigation();
   const [form, setForm] = useState({
@@ -33,15 +32,18 @@ export default function LoginPage() {
 
       if (response.status === 'success') {
         await AsyncStorage.setItem('userData', JSON.stringify(response.data));
-        setIsLoading(false); 
+        setIsLoading(false);
         navigation.reset({
           index: 0,
-          routes: [{ name: 'BookingScreen' }],
+          routes: [{name: 'BookingScreen'}],
         });
         //navigation.navigate('BookingScreen');
       } else {
         setIsLoading(false); // Hide loading dialog
-        Alert.alert('Login Failed', response.message || 'Invalid email or password.');
+        Alert.alert(
+          'Login Failed',
+          response.message || 'Invalid email or password.',
+        );
       }
     } catch (error) {
       setIsLoading(false); // Hide loading dialog
@@ -49,11 +51,15 @@ export default function LoginPage() {
       console.error(error);
     }
   };
-
+ 
   return (
     <>
-      <StatusBar translucent={true} backgroundColor="transparent" barStyle="dark-content" />
-      <SafeAreaView style={{ flex: 1, backgroundColor: '#e8ecf4' }}>
+      <StatusBar
+        translucent={true}
+        backgroundColor="transparent"
+        barStyle="dark-content"
+      />
+      <SafeAreaView style={{flex: 1, backgroundColor: '#e8ecf4'}}>
         <KeyboardAwareScrollView style={styles.container}>
           <View style={styles.header}>
             <Image
@@ -64,7 +70,7 @@ export default function LoginPage() {
             />
 
             <Text style={styles.title}>
-              Sign in to <Text style={{ color: '#075eec' }}>TpmsTracker</Text>
+              Sign in to <Text style={{color: '#075eec'}}>TpmsTracker</Text>
             </Text>
           </View>
 
@@ -77,7 +83,7 @@ export default function LoginPage() {
                 autoCorrect={false}
                 clearButtonMode="while-editing"
                 keyboardType="email-address"
-                onChangeText={(email) => setForm({ ...form, email })}
+                onChangeText={email => setForm({...form, email})}
                 placeholder="Enter Mobile No"
                 placeholderTextColor="#6b7280"
                 style={styles.inputControl}
@@ -91,7 +97,7 @@ export default function LoginPage() {
               <TextInput
                 autoCorrect={false}
                 clearButtonMode="while-editing"
-                onChangeText={(password) => setForm({ ...form, password })}
+                onChangeText={password => setForm({...form, password})}
                 placeholder="********"
                 placeholderTextColor="#6b7280"
                 style={styles.inputControl}
@@ -111,8 +117,7 @@ export default function LoginPage() {
             <TouchableOpacity
               onPress={() => {
                 navigation.navigate('ForgetPassword');
-              }}
-            >
+              }}>
               <Text style={styles.formLink}>Forgot password?</Text>
             </TouchableOpacity>
           </View>
@@ -121,7 +126,7 @@ export default function LoginPage() {
         <TouchableOpacity onPress={() => {}}>
           <Text style={styles.formFooter}>
             Don't have an account?{' '}
-            <Text style={{ textDecorationLine: 'underline' }}>Sign up</Text>
+            <Text style={{textDecorationLine: 'underline'}}>Sign up</Text>
           </Text>
         </TouchableOpacity>
 

@@ -13,7 +13,7 @@ import {
   ActivityIndicator,
   ToastAndroid,
 } from 'react-native';
-import React, {useState, useEffect} from 'react';
+import React, {useState, useEffect, useContext} from 'react';
 import Back from '../assets/svg/drop.svg';
 import {useNavigation} from '@react-navigation/native';
 import axios from 'axios';
@@ -24,6 +24,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Toast from 'react-native-toast-message';
 import NetInfo from '@react-native-community/netinfo';
 import NoInternet from './NoInternet';
+// import { ImeiContext } from './ImeiProvider';
+
 const RevisitService = () => {
   const [isConnected, setIsConnected] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -70,6 +72,8 @@ const RevisitService = () => {
     'Tap to Upload Photo',
   ]);
 
+  // const {options} = useContext(ImeiContext);
+
   const navigation = useNavigation();
   useEffect(() => {
     const fetchAsy = async () => {
@@ -91,9 +95,7 @@ const RevisitService = () => {
           setSelectedPhotos(parsedUploadData.selectedPhotos || []);
           setuploadFileB(false);
           setSearchQuery(parsedUploadData.localObj.global);
-        } else {
-          Alert.alert('uploadData does not exist in AsyncStorage.');
-        }
+        } 
       } catch (error) {
         Alert.alert('Error fetching uploadData from AsyncStorage:', error);
       }
@@ -107,32 +109,41 @@ const RevisitService = () => {
     });
     return () => unsubscribe();
   }, []);
+const controller = new AbortController();
 
-  useEffect(() => {
-    const fetchImei = async () => {
-      try {
-        setIsLoading(true);
-        const response = await getImei();
-        
-        console.log('IMEI Response Status:', response.status);
-        if (response.status === 'success') {
-          setOptions(response.data);
-          
-        }
-        else{
-          Alert.alert(response);
-        }
-      } catch (error) {
-        Alert.alert('Fetch Global_id Error:', error);  
-      }
-      finally
-      {
-        setIsLoading(false);
-      }
-    };
+useEffect(() => {
+  const fetchImei = async () => {
+    try {
+      setIsLoading(true);
+      // Pass the signal to the getImei function
+      const response = await getImei(controller.signal);
+      // console.log('IMEI Response Status:', response.status);
 
-    fetchImei();
-  }, []);
+      if (response.status === 'success') {
+        console.log('api call successfully')
+        setOptions(response.data);
+      } else {
+        Alert.alert('Error', response.message || 'Unknown error');
+      }
+    } catch (error) {
+      if (axios.isCancel(error)) {
+        console.log('Request cancelled:', error.message);
+      } else {
+        Alert.alert('Error fetching IMEI:', error.message);
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  fetchImei();
+
+  // Cleanup function to cancel the request
+  return () => {
+    controller.abort();
+    console.log('api close');
+  };
+}, []);
 
   useEffect(() => {
     const cleanedQuery = searchQuery.replace(/\s+/g, '').toLowerCase();
@@ -185,7 +196,7 @@ const RevisitService = () => {
           latitude: position.coords.latitude,
           longitude: position.coords.longitude,
         });
-        console.log(position);
+        // console.log(position);
       },
       error => {
         Alert.alert(error.code, error.message);
@@ -331,7 +342,6 @@ const RevisitService = () => {
         },
       )
       .then(response => {
-        // console.log('Upload response:', response.data);
         Alert.alert('Upload Successful', response.data.message);
         const dataToSave = {
           localObj,
@@ -342,7 +352,7 @@ const RevisitService = () => {
           uploadB: false,
         };
         AsyncStorage.setItem('uploadData', JSON.stringify(dataToSave))
-          .then(() => Alert.alert('Specific data saved successfully'))
+          .then(() => console.log('Specific data saved successfully'))
           .catch(error => Alert.alert('Error saving data:', error));
         setuploadFileB(false);
         setIsLoading(false);
@@ -422,12 +432,12 @@ const RevisitService = () => {
       )
       .then(response => {
         setIsLoading(false);
-        console.log('Upload response:', response.data);
+       //console.log('Upload response:', response.data);
         Alert.alert('Upload Successful', response.data.message);
         setuploadFileA(false);
         try {
           AsyncStorage.removeItem('uploadData');
-          Alert.alert('uploadData successfully removed from AsyncStorage.');
+          //Alert.alert('uploadData successfully removed from AsyncStorage.');
         } catch (error) {
           Alert.alert('Error removing uploadData from AsyncStorage:', error);
         }

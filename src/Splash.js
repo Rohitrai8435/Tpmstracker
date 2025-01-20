@@ -30,7 +30,7 @@ const Splash = () => {
         const userData = await AsyncStorage.getItem('userData');
         const data = JSON.parse(userData);
         const {id,password,mobile} =data;
-        console.log(data);
+        // console.log(data);
         if (data) {
           try {
             const loginField = password ? password : mobile; 

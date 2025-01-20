@@ -17,6 +17,7 @@ import {closeRequest, getDetailOfCard} from '../service/ApiService';
 import Close from '../../assets/svg/cross.svg';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import FastImage from 'react-native-fast-image';
+import axios from 'axios';
 
 const IncTeam = () => {
   const navigation = useNavigation();
@@ -32,7 +33,7 @@ const IncTeam = () => {
     imageUrl: null,
     time: null,
   });
-  console.log(route);
+  // console.log(route);
   useEffect(() => {
     const fetchUserData = async () => {
       const userData = await AsyncStorage.getItem('userData');
@@ -94,35 +95,56 @@ const IncTeam = () => {
       );
     }
   };
+  const controller = new AbortController();
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await getDetailOfCard(item.unique_id, item.imei);
-        setVersion(response.dataVersion[0]?.version);
-        console.log('call', response);
-        setWcc(response.wcc);
-        const beforeItems = [];
-        const afterItems = [];
-        console.log('wcc', response.wcc);
-        response.data.forEach(dataItem => {
-          if (dataItem.type === 'Before' || !dataItem.type) {
-            beforeItems.push(dataItem);
-          } else if (dataItem.type === 'After') {
-            afterItems.push(dataItem);
+        const fetchData = async () => {
+          try {
+            const response = await getDetailOfCard(
+              item.unique_id,
+              item.imei,
+              controller.signal, // Pass the signal
+            );
+  
+            // Update state with response data
+            setVersion(response.dataVersion[0]?.version);
+            setWcc(response.wcc);
+  
+            const beforeItems = [];
+            const afterItems = [];
+  
+            response.data.forEach(dataItem => {
+              if (dataItem.type === 'Before' || !dataItem.type) {
+                beforeItems.push(dataItem);
+              } else if (dataItem.type === 'After') {
+                afterItems.push(dataItem);
+              }
+            });
+  
+            setBeforeList(beforeItems);
+            setAfterList(afterItems);
+  
+            // console.log('Before List:', beforeItems);
+            // console.log('After List:', afterItems);
+            console.log("API Call successfully")
+          } catch (error) {
+            // Handle Axios request cancellations and other errors
+            if (axios.isCancel(error)) {
+              console.log('Request cancelled:', error.message);
+            } else {
+              Alert.alert('Error fetching card details:', error.message);
+            }
           }
-        });
-
-        setBeforeList(beforeItems);
-        setAfterList(afterItems);
-
-        //  console.log('Before List:', beforeItems);
-        //  console.log('After List:', afterItems);
-      } catch (error) {
-        console.error('Error fetching card details:', error);
-      }
-    };
-    fetchData();
-  }, [item]);
+        };
+  
+        // Trigger the API call
+        fetchData();
+  
+        // Cleanup function to cancel the request
+        return () => {
+          controller.abort(); // Cancel the request
+          console.log('API request cancelled.');
+        };
+      }, [item]);
 
   return (
     <>

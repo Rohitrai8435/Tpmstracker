@@ -42,10 +42,13 @@ const IncNotClose = () => {
   
   const nav=(item)=>{
     const color = '#fcad2e';
-    if(profile.designation?.toLowerCase() == 'technician')
-    navigation.navigate('IncScreen',{item,color});
-  else
-  navigation.navigate('IncTeam',{item,color});
+   if (
+     profile.designation?.toLowerCase() == 'technician' ||
+     profile.designation?.toLowerCase() == 'others'
+   ) {
+     navigation.navigate('IncScreen', {item, color});
+     console.log(profile.designation?.toLowerCase());
+   } else navigation.navigate('IncTeam', {item, color});
   }
 
   const makeCall = (number) => {
