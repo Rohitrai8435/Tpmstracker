@@ -49,14 +49,22 @@ const RevisitService = () => {
     null,
     null,
   ]);
-  const [obj, setObj] = useState({imei: '', version: '', global: ''});
+  const [obj, setObj] = useState({
+    imei: '',
+    version: '',
+    global: '',
+  });
   const [profile, setProfile] = useState(null);
   const [uploadFileB, setuploadFileB] = useState(true);
   const [uploadFileA, setuploadFileA] = useState(true);
   const [location, setLocation] = useState({latitude: null, longitude: null});
   const [complainNo, setComplainNo] = useState(null);
   const [faultyRemark, setFaultyRemark] = useState('');
+  const [proublemType, setproublemType] = useState('');
   const [replaceRemark, setReplaceRemark] = useState('');
+  const [ActualRemark, setActualRemark] = useState('');
+  
+  const [siteStatus, SetsiteStatus] = useState('');
   const [wcc, setWcc] = useState([null, null]);
   const [photoCaption, setPhotoCaption] = useState([
     'TPMS',
@@ -81,6 +89,7 @@ const RevisitService = () => {
         const userData = await AsyncStorage.getItem('userData');
         const parsedData = JSON.parse(userData);
         setProfile(parsedData);
+        // console.log(profile,"bmnmbmn")
       } catch (error) {}
       try {
         const uploadData = await AsyncStorage.getItem('uploadData');
@@ -95,7 +104,7 @@ const RevisitService = () => {
           setSelectedPhotos(parsedUploadData.selectedPhotos || []);
           setuploadFileB(false);
           setSearchQuery(parsedUploadData.localObj.global);
-        } 
+        }
       } catch (error) {
         Alert.alert('Error fetching uploadData from AsyncStorage:', error);
       }
@@ -109,41 +118,41 @@ const RevisitService = () => {
     });
     return () => unsubscribe();
   }, []);
-const controller = new AbortController();
+  const controller = new AbortController();
 
-useEffect(() => {
-  const fetchImei = async () => {
-    try {
-      setIsLoading(true);
-      // Pass the signal to the getImei function
-      const response = await getImei(controller.signal);
-      // console.log('IMEI Response Status:', response.status);
+  useEffect(() => {
+    const fetchImei = async () => {
+      try {
+        setIsLoading(true);
+        // Pass the signal to the getImei function
+        const response = await getImei(controller.signal);
+        // console.log('IMEI Response Status:', response.status);
 
-      if (response.status === 'success') {
-        console.log('api call successfully')
-        setOptions(response.data);
-      } else {
-        Alert.alert('Error', response.message || 'Unknown error');
+        if (response.status === 'success') {
+          console.log('api call successfully');
+          setOptions(response.data);
+        } else {
+          Alert.alert('Error', response.message || 'Unknown error');
+        }
+      } catch (error) {
+        if (axios.isCancel(error)) {
+          console.log('Request cancelled:', error.message);
+        } else {
+          Alert.alert('Error fetching IMEI:', error.message);
+        }
+      } finally {
+        setIsLoading(false);
       }
-    } catch (error) {
-      if (axios.isCancel(error)) {
-        console.log('Request cancelled:', error.message);
-      } else {
-        Alert.alert('Error fetching IMEI:', error.message);
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    };
 
-  fetchImei();
+    fetchImei();
 
-  // Cleanup function to cancel the request
-  return () => {
-    controller.abort();
-    console.log('api close');
-  };
-}, []);
+    // Cleanup function to cancel the request
+    return () => {
+      controller.abort();
+      // console.log('api close');
+    };
+  }, []);
 
   useEffect(() => {
     const cleanedQuery = searchQuery.replace(/\s+/g, '').toLowerCase();
@@ -153,9 +162,25 @@ useEffect(() => {
         .toLowerCase()
         .startsWith(cleanedQuery),
     );
+    AsyncStorage.removeItem('uploadData');
+    // console.log(filtered);
     setFilteredOptions(filtered);
-  }, [searchQuery, options]);
-
+  }, [searchQuery]);
+  useEffect(() => {
+    // console.log(filteredOptions, 'xcvc,vmxc.');
+    const cleanedQuery = searchQuery.replace(/\s+/g, '').toLowerCase();
+    const filtered = options.filter(option =>
+      option.globel_id
+        .replace(/\s+/g, '')
+        .toLowerCase()
+        .startsWith(cleanedQuery),
+    );
+    setComplainNo(filtered[0]?.complaint_no);
+    setFaultyRemark(filtered[0]?.problem_desc);
+    
+    setproublemType(filtered[0]?.problem_type);
+    SetsiteStatus(filtered[0]?.status);
+  }, [searchQuery]);
   const requestLocationPermission = async () => {
     try {
       if (Platform.OS === 'android') {
@@ -182,10 +207,10 @@ useEffect(() => {
         getCurrentLocation();
       }
     } catch (err) {
-      console.warn(err);
-       Alert.alert(
-         'Location permission is required to access your current location.'
-       );
+      console.log(err);
+      Alert.alert(
+        'Location permission is required to access your current location.',
+      );
     }
   };
 
@@ -247,7 +272,6 @@ useEffect(() => {
           let newTimestamps = [...timestampAfter];
           newTimestamps[index] = timestamp;
           setTimeStampAfter(newTimestamps);
-          console.log('log', timestampAfter);
         }
       }
     });
@@ -277,6 +301,7 @@ useEffect(() => {
           global: filtered[0].globel_id || '',
         };
         setObj(localObj);
+        // console.log(obj);
         // console.log('selected');
       } else {
         Alert.alert('Error', 'Respective Global ID not found in the database');
@@ -360,7 +385,7 @@ useEffect(() => {
       })
       .catch(error => {
         setIsLoading(false);
-        console.error('Error uploading images:', error);
+        console.log('Error uploading images:', error);
         Alert.alert(
           'Upload Failed',
           'There was an error uploading your images.',
@@ -382,7 +407,11 @@ useEffect(() => {
       return;
     }
     if (!replaceRemark || replaceRemark.trim() === '') {
-      Alert.alert('Error', 'Please fill Visit Remarks');
+      Alert.alert('Error', 'Please fill Action Taken Remarks');
+      return;
+    }
+    if (!ActualRemark || ActualRemark.trim() === '') {
+      Alert.alert('Error', 'Please fill Actaul  Remarks');
       return;
     }
 
@@ -393,12 +422,12 @@ useEffect(() => {
       );
       return;
     }
-
     setIsLoading(true);
     const formData = new FormData();
     formData.append('unique_id', uniqueId);
     formData.append('tech_id', profile.id);
     formData.append('after_remark', replaceRemark);
+    formData.append('actualRemark', ActualRemark);
     wcc.forEach((photo, index) => {
       if (photo) {
         formData.append('wcc[]', {
@@ -416,7 +445,7 @@ useEffect(() => {
           type: 'image/jpeg',
         });
         if (timestampAfter[index]) {
-          console.log('index', timestampAfter[index]);
+          // console.log('index', timestampAfter[index]);
           formData.append(`timestamp[${index}]`, timestampAfter[index]);
         }
       }
@@ -432,8 +461,49 @@ useEffect(() => {
       )
       .then(response => {
         setIsLoading(false);
-       //console.log('Upload response:', response.data);
+        //console.log('Upload response:', response.data);
         Alert.alert('Upload Successful', response.data.message);
+
+        let localObj = {...obj};
+        if (searchQuery.length > 0 && !localObj?.imei) {
+          const cleanedQuery = searchQuery.trim().toLowerCase();
+          const filtered = options.filter(option =>
+            option.globel_id?.trim().toLowerCase().startsWith(cleanedQuery),
+          );
+
+          if (filtered.length > 0) {
+            localObj = {
+              imei: filtered[0]?.gsm_imei_no || '',
+              version: filtered[0]?.version || '',
+              global: filtered[0]?.globel_id || '',
+            };
+            setObj(localObj); // Update the state
+            console.log('selected');
+            console.log(obj);
+          } else {
+            Alert.alert(
+              'Error',
+              'Respective Global ID not found in the database',
+            );
+            return;
+          }
+        }
+
+        if (!localObj.imei || !localObj.version) {
+          Alert.alert('Error', 'First select a site by Global ID.');
+          return;
+        }
+
+        navigation.navigate('wccform', {
+          imei: localObj?.imei,
+          mode: false,
+          uniqueId: uniqueId,
+          complainNo: complainNo,
+          serviceType: 'Revisit',
+          technicianName: profile.name,
+          version: localObj.version,
+          color: '#fb703f',
+        });
         setuploadFileA(false);
         try {
           AsyncStorage.removeItem('uploadData');
@@ -444,7 +514,7 @@ useEffect(() => {
       })
       .catch(error => {
         setIsLoading(false);
-        console.error('Error uploading images:', error);
+
         Alert.alert(
           'Upload Failed',
           'There was an error uploading your images.',
@@ -475,7 +545,7 @@ useEffect(() => {
           global: filtered[0].globel_id || '',
         };
         setObj(localObj); // Update the state
-        console.log('selected');
+        // console.log('selected');
       } else {
         Alert.alert('Error', 'Respective Global ID not found in the database');
         return;
@@ -567,23 +637,46 @@ useEffect(() => {
               )}
             />
           )}
+          <Text style={styles.uploadLabel}>Complain No:</Text>
           <TextInput
             style={styles.searchInput}
             placeholder="Enter Complain No"
             placeholderTextColor={'#888'}
             value={complainNo}
+            readOnly={true}
             onChangeText={setComplainNo}
           />
+          <Text style={styles.uploadLabel}>Complain Status:</Text>
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Complain Status"
+            placeholderTextColor={'#888'}
+            readOnly={true}
+            value={siteStatus}
+            onChangeText={SetsiteStatus}
+          />
 
-          <Text style={styles.uploadLabel}>Before Work Photos:</Text>
+          <Text style={styles.uploadLabel}>Complaine Remarks:</Text>
+
+          <TextInput
+            style={[styles.searchInput, {marginTop: 0, marginBottom: 10}]}
+            placeholder="Enter Complaine Remarks"
+            placeholderTextColor={'#888'}
+            readOnly={true}
+            value={faultyRemark}
+            onChangeText={setFaultyRemark}
+          />
+          <Text style={styles.uploadLabel}>Proublem Type:</Text>
 
           <TextInput
             style={[styles.searchInput, {marginTop: 0, marginBottom: 10}]}
             placeholder="Enter Complain Remarks"
             placeholderTextColor={'#888'}
-            value={faultyRemark}
-            onChangeText={setFaultyRemark}
+            value={proublemType}
+            readOnly={true}
+            onChangeText={setproublemType}
           />
+          <Text style={styles.uploadLabel}>Before Work Photos:</Text>
           <View style={styles.photoContainer}>
             {selectedPhotos.map((photo, index) => (
               <TouchableOpacity
@@ -613,14 +706,24 @@ useEffect(() => {
             }}>
             <Text style={styles.flightPrice}>Upload Photo</Text>
           </TouchableOpacity>
-          <Text style={styles.uploadLabel}>After Work Photos:</Text>
+          <Text style={styles.uploadLabel}>Actual Remark:</Text>
           <TextInput
             style={[styles.searchInput, {marginTop: 0, marginBottom: 10}]}
-            placeholder="Enter Visit Remarks"
+            placeholder="Enter Actual Remarks"
+            placeholderTextColor={'#888'}
+            value={ActualRemark}
+            onChangeText={setActualRemark}
+          />
+          <Text style={styles.uploadLabel}>Action Taken:</Text>
+          <TextInput
+            style={[styles.searchInput, {marginTop: 0, marginBottom: 10}]}
+            placeholder="Enter Action Taken"
             placeholderTextColor={'#888'}
             value={replaceRemark}
             onChangeText={setReplaceRemark}
           />
+
+          <Text style={styles.uploadLabel}>After Work Photos:</Text>
           <View style={styles.photoContainer}>
             {selectedPhotosAfter.map((photo, index) => (
               <TouchableOpacity
@@ -665,8 +768,8 @@ useEffect(() => {
                       {color: 'green', textAlign: 'center'},
                     ]}>
                     {index === 0
-                      ? 'Tap to Upload WCC Photo'
-                      : 'Tap to Upload Your image with PPE Kit'}
+                      ? 'System Serial Number'
+                      : 'Selfi with Technician with PPE Kit'}
                   </Text>
                 )}
               </TouchableOpacity>

@@ -76,6 +76,7 @@ const IncTeam = () => {
     try {
       const response = await closeRequest(item.unique_id, id, item.imei);
       if (response.status) {
+        console.log(response.data);
         Alert.alert(
           'Success',
           'Request closed successfully. Site status updated.',
@@ -88,7 +89,7 @@ const IncTeam = () => {
         );
       }
     } catch (error) {
-      console.error('Error closing request:', error);
+      console.log('Error closing request:', error);
       Alert.alert(
         'Unexpected Error',
         'An error occurred while closing the request. Please try again.',

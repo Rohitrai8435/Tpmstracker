@@ -12,7 +12,7 @@ import Close from '../../assets/svg/cross.svg'
 import User from '../../assets/svg/showpassword.svg'
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-// Get screen dimensions
+
 const { width } = Dimensions.get('window');
 const { height } = Dimensions.get('window');
 

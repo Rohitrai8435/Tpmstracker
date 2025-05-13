@@ -22,6 +22,61 @@ export const getData = async tech_id => {
     throw error;
   }
 };
+export const updatephotos = async (
+  updatedphoto,
+  updatedwcc,
+  newphotoBefore,
+  newphotoAfter,
+  visitRemark,
+  AfterRemark,
+  ActualRemark,
+  unique_id,
+  service_type,
+) => {
+  try {
+    // console.log(updatedwcc);
+    const response = await LocalApi.post('updates_photos', {
+      // Ensure this matches backend route
+      updatedphoto,
+      updatedwcc,
+      newphotoBefore,
+      newphotoAfter,
+      visitRemark,
+      AfterRemark,
+      ActualRemark,
+      unique_id,
+      service_type,
+    });
+    return response.data;
+  } catch (error) {
+    console.log('API Error:', error);
+    throw error;
+  }
+};
+export const insert_wcc_data = async wccData => {
+  try {
+    const response = await LocalApi.post('insert_wcc', {
+      wccData,
+    });
+    // console.log(response.data);
+    return response.data;
+  } catch (error) {
+    console.log('API Error:', error);
+    throw error;
+  }
+};
+export const serachCmtracker = async globel_id => {
+  try {
+    const response = await LocalApi.post('Cm_tracker', {
+      globel_id,
+    });
+    // console.log(response.data);
+    return response.data;
+  } catch (error) {
+    console.log('API Error:', error);
+    throw error;
+  }
+};
 
 export const getDataSoc = async tech_id => {
   try {
@@ -40,6 +95,31 @@ export const getImei = async signal => {
       {}, // Empty payload
       createRequestConfig(signal), // Correct configuration placement
     );
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+export const getImeiAll = async signal => {
+  try {
+    const response = await LocalApi.post(
+      'imei_list_all', // API endpoint
+      {}, // Empty payload
+      createRequestConfig(signal), // Correct configuration placement
+    );
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+export const getmaterailName = async signal => {
+  try {
+    const response = await LocalApi.post(
+      'get_matrail_list', // API endpoint
+      {}, // Empty payload
+      createRequestConfig(signal), // Correct configuration placement
+    );
+    
     return response.data;
   } catch (error) {
     throw error;
@@ -104,6 +184,7 @@ export const getSiteDetail = async imei => {
     throw error;
   }
 };
+
 export const getSiteDetailV2 = async imei => {
   try {
     const response = await ApiService.post('new_getimei_nu', {imei});

@@ -52,18 +52,23 @@ const RevisiteDone = () => {
     const url = `tel:${number}`;
     Linking.openURL(url).catch((err) => console.error('Error opening dialer', err));
   };
-  const renderItem = ({ item }) => (
-    <TouchableOpacity style={styles.card} onPress={() => { nav(item); }}>
+  const renderItem = ({item}) => (
+    <TouchableOpacity
+      style={styles.card}
+      onPress={() => {
+        nav(item);
+      }}>
       <Text style={styles.text}>Site name: {item.site_name}</Text>
       <Text style={styles.text}>Global id: {item.site_id}</Text>
       <Text style={styles.text}>Circle: {item.state_name}</Text>
       {profile?.designation?.toLowerCase() == 'technician' ? (
         <>
-          <Text style={styles.text}>Technician Name: {item.technician_name}</Text>
+          <Text style={styles.text}>
+            Technician Name: {item.technician_name}
+          </Text>
           <Text
             style={[styles.text, styles.link]}
-            onPress={() => makeCall(item.technician_mobile)}
-          >
+            onPress={() => makeCall(item.technician_mobile)}>
             Technician Mobile: {item.technician_mobile}
           </Text>
         </>
@@ -82,13 +87,25 @@ const RevisiteDone = () => {
         Request Close Time: {item.request_close_time || 'Not Closed Yet'}
       </Text>
       <Text style={styles.text}>
-        Remark by soc: {item.remark_soc ? item.remark_soc : "NA"}
+        Remark by soc: {item.remark_soc ? item.remark_soc : 'NA'}
       </Text>
       <Text style={styles.text}>
-       Complain Remark: <Text style={[styles.remarkText,{color:'red'}]}>{item.before_remark}</Text>
+        Complain Remark:{' '}
+        <Text style={[styles.remarkText, {color: 'red'}]}>
+          {item.before_remark}
+        </Text>
       </Text>
       <Text style={styles.text}>
-       Visit Remark: <Text style={[styles.remarkText,{color:'green'}]}>{item.after_remark}</Text>
+        Action Taken:{' '}
+        <Text style={[styles.remarkText, {color: 'green'}]}>
+          {item.after_remark}
+        </Text>
+      </Text>
+      <Text style={styles.text}>
+        Actual Remark:
+        <Text style={[styles.remarkText, {color: 'blue'}]}>
+          {item.actualRemark ? item.actualRemark : 'NA'}
+        </Text>
       </Text>
     </TouchableOpacity>
   );

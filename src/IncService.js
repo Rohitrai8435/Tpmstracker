@@ -5,12 +5,13 @@ import { useNavigation } from '@react-navigation/native';
 import axios from 'axios';
 import Geolocation from 'react-native-geolocation-service';
 import { launchCamera } from 'react-native-image-picker';
-import { getImei } from './service/ApiService';
+import {getImeiAll } from './service/ApiService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Toast from 'react-native-toast-message';
 import NetInfo from '@react-native-community/netinfo';
 import NoInternet from './NoInternet';
-import {ImeiContext} from './ImeiProvider';
+
+
 const IncService = () => {
   const [isConnected, setIsConnected] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -24,6 +25,7 @@ const IncService = () => {
     null,
     null,
   ]);
+  const [uniqueId, setUniqueId] = useState(null);
   const [obj, setObj] = useState({imei: '', version: '', global: ''});
   const [profile, setProfile] = useState(null);
   const [wcc, setWcc] = useState([null, null]);
@@ -44,9 +46,6 @@ const IncService = () => {
   ]);
   const navigation = useNavigation();
 
-  // const {options} = useContext(ImeiContext);
-  
-  
 
   useEffect(() => {
     const fetchAsy = async () => {
@@ -72,8 +71,8 @@ useEffect(() => {
     try {
       setIsLoading(true);
       // Pass the signal to the getImei function
-      const response = await getImei(controller.signal);
-      console.log('IMEI Response Status:', response.status);
+      const response = await getImeiAll(controller.signal);
+      // console.log('IMEI Response Status:', response.status);
 
       if (response.status === 'success') {
         setOptions(response.data);
@@ -169,9 +168,10 @@ useEffect(() => {
         console.log('ImagePicker Error: ', response.errorMessage);
       } else {
         const uri = response.assets[0].uri;
+
         if (isWCC) {
           let newPhotos = [...wcc];
-          newPhotos[index] = {uri}; // Ensure it has the correct format
+          newPhotos[index] = {uri}; 
           setWcc(newPhotos);
         } else {
           const timestamp = new Date().toISOString();
@@ -238,6 +238,7 @@ useEffect(() => {
 
     setIsLoading(true);
     const uniqueId = generateUniqueId(localObj.imei);
+    setUniqueId(uniqueId);
     const currentTimestamp = new Date().toISOString();
     const formData = new FormData();
     formData.append('unique_id', uniqueId);
@@ -281,6 +282,46 @@ useEffect(() => {
         setIsLoading(false);
         console.log('Upload response:', response.data);
         Alert.alert('Upload Successful', response.data.message);
+        let localObj = {...obj};
+        if (searchQuery.length > 0 && !localObj?.imei) {
+          const cleanedQuery = searchQuery.trim().toLowerCase();
+          const filtered = options.filter(option =>
+            option.globel_id?.trim().toLowerCase().startsWith(cleanedQuery),
+          );
+
+          if (filtered.length > 0) {
+            localObj = {
+              imei: filtered[0].gsm_imei_no || '',
+              version: filtered[0].version || '',
+              global: filtered[0].globel_id || '',
+            };
+            setObj(localObj); // Update the state
+            console.log('selected');
+          } else {
+            Alert.alert(
+              'Error',
+              'Respective Global ID not found in the database',
+            );
+            return;
+          }
+        }
+
+        if (!localObj.imei || !localObj.version) {
+          Alert.alert('Error', 'First select a site by Global ID.');
+          return;
+        }
+
+        console.log('click');
+        navigation.navigate('wccform', {
+          imei: localObj.imei,
+          mode: false,
+          version: localObj.version,
+          uniqueId: uniqueId,
+          complainNo: 'NA',
+          serviceType: 'Inc',
+          technicianName: profile.name,
+          color: '#fb703f',
+        });
         setuploadFile(false);
       })
       .catch(error => {
@@ -300,6 +341,47 @@ useEffect(() => {
       text2: message,
     });
   };
+
+  const handlewcc=()=>{
+    let localObj = {...obj};
+    if (searchQuery.length > 0 && !localObj?.imei) {
+      const cleanedQuery = searchQuery.trim().toLowerCase();
+      const filtered = options.filter(option =>
+        option.globel_id?.trim().toLowerCase().startsWith(cleanedQuery),
+      );
+
+      if (filtered.length > 0) {
+        localObj = {
+          imei: filtered[0].gsm_imei_no || '',
+          version: filtered[0].version || '',
+          global: filtered[0].globel_id || '',
+        };
+        setObj(localObj); // Update the state
+        console.log('selected');
+      } else {
+        Alert.alert('Error', 'Respective Global ID not found in the database');
+        return;
+      }
+    }
+
+    if (!localObj.imei || !localObj.version) {
+      Alert.alert('Error', 'First select a site by Global ID.');
+      return;
+    }
+
+  
+     navigation.navigate('wccform', {
+       imei: localObj.imei,
+       mode: false,
+       uniqueId: uniqueId,
+       technicianName: profile.name,
+       version: localObj.version,
+       serviceType: 'Inc',
+       complainNo: 'NA',
+       color: '#fb703f',
+     });
+
+  }
 
   const siteDetail = () => {
     let localObj = {...obj};
@@ -332,6 +414,8 @@ useEffect(() => {
       imei: localObj.imei,
       mode: false,
       version: localObj.version,
+      
+
       color: '#fb703f',
     });
   };
@@ -454,8 +538,8 @@ useEffect(() => {
                       {color: 'green', textAlign: 'center'},
                     ]}>
                     {index === 0
-                      ? 'Upload WCC Photo'
-                      : 'Upload Your image with PPE Kit'}
+                      ? 'System Serial Number'
+                      : 'Selfi with Technician with PPE Kit'}
                   </Text>
                 )}
               </TouchableOpacity>
@@ -480,6 +564,7 @@ useEffect(() => {
             }}>
             <Text style={styles.flightPrice}>Site Detail</Text>
           </TouchableOpacity>
+          
         </ScrollView>
       )}
     </>

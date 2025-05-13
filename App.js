@@ -23,118 +23,124 @@ import Splash from './src/Splash';
 import IncTeam from './src/screen/IncTeam';
 import Location from './src/screen/Location';
 import PendingRemark from './src/screen/PendingRemark';
+import SiteInstallationForm from './src/component/SiteInstallationForm';
 const Stack = createStackNavigator();
 
 const App = () => {
   return (
     <NavigationContainer>
-      <SafeAreaView style={{ flex: 1 }}>
+      <SafeAreaView style={{flex: 1}}>
         <Stack.Navigator>
-        <Stack.Screen
+          <Stack.Screen
             name="Splash"
             component={Splash}
-            options={{ headerShown: false }}
+            options={{headerShown: false}}
           />
           <Stack.Screen
             name="Login"
             component={LoginPage}
-            options={{ headerShown: false }}
+            options={{headerShown: false}}
           />
           <Stack.Screen
             name="ForgetPassword"
             component={ForgetPassword}
-            options={{ headerShown: false }}
+            options={{headerShown: false}}
           />
           <Stack.Screen
             name="BookingScreen"
             component={BookingScreen}
-            options={{ headerShown: false }}
+            options={{headerShown: false}}
+          />
+          <Stack.Screen
+            name="wccform"
+            component={SiteInstallationForm}
+            options={{headerShown: false}}
           />
           <Stack.Screen
             name="About"
             component={About}
-            options={{ headerShown: false }}
+            options={{headerShown: false}}
           />
           <Stack.Screen
             name="Privacy"
             component={Privacy}
-            options={{ headerShown: false }}
+            options={{headerShown: false}}
           />
           <Stack.Screen
             name="Profile"
             component={Profile}
-            options={{ headerShown: false }}
+            options={{headerShown: false}}
           />
           <Stack.Screen
             name="IncService"
             component={IncService}
-            options={{ headerShown: false }}
+            options={{headerShown: false}}
           />
           <Stack.Screen
             name="Revisit"
             component={RevisitService}
-            options={{ headerShown: false }}
+            options={{headerShown: false}}
           />
           <Stack.Screen
             name="Update"
             component={AnyUpdate}
-            options={{ headerShown: false }}
+            options={{headerShown: false}}
           />
           <Stack.Screen
             name="INCDONE"
             component={IncDone}
-            options={{ headerShown: false }}
+            options={{headerShown: false}}
           />
           <Stack.Screen
             name="INCNOTCLOSE"
             component={IncNotClose}
-            options={{ headerShown: false }}
+            options={{headerShown: false}}
           />
           <Stack.Screen
             name="REVISITDONE"
             component={RevisiteDone}
-            options={{ headerShown: false }}
+            options={{headerShown: false}}
           />
           <Stack.Screen
             name="REVISITNOTCLOSE"
             component={RevisiteNotClose}
-            options={{ headerShown: false }}
+            options={{headerShown: false}}
           />
-            <Stack.Screen
+          <Stack.Screen
             name="SiteDetail"
             component={SiteDetail}
-            options={{ headerShown: false }}
+            options={{headerShown: false}}
           />
-           <Stack.Screen
+          <Stack.Screen
             name="RunHours"
             component={RunHours}
-            options={{ headerShown: false }}
+            options={{headerShown: false}}
           />
           <Stack.Screen
             name="GraphView"
             component={GraphView}
-            options={{ headerShown: false }}
+            options={{headerShown: false}}
           />
-           <Stack.Screen
+          <Stack.Screen
             name="IncScreen"
             component={IncScreen}
-            options={{ headerShown: false }}
+            options={{headerShown: false}}
           />
-            <Stack.Screen
+          <Stack.Screen
             name="IncTeam"
             component={IncTeam}
-            options={{ headerShown: false }}
+            options={{headerShown: false}}
           />
-            <Stack.Screen
+          <Stack.Screen
             name="Location"
             component={Location}
-            options={{ headerShown: false }}
-          /> 
-           <Stack.Screen
+            options={{headerShown: false}}
+          />
+          <Stack.Screen
             name="Pending"
             component={PendingRemark}
-            options={{ headerShown: false }}
-          />  
+            options={{headerShown: false}}
+          />
         </Stack.Navigator>
       </SafeAreaView>
     </NavigationContainer>

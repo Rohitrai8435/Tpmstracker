@@ -24,6 +24,7 @@ export default function LoginPage() {
     password: '',
   });
   const [isLoading, setIsLoading] = useState(false); // Loading state for modal
+  const [showPassword, setShowPassword] = useState(false); // State to toggle password visibility
 
   const login = async () => {
     setIsLoading(true); // Show loading dialog
@@ -40,10 +41,7 @@ export default function LoginPage() {
         //navigation.navigate('BookingScreen');
       } else {
         setIsLoading(false); // Hide loading dialog
-        Alert.alert(
-          'Login Failed',
-          response.message || 'Invalid email or password.',
-        );
+        Alert.alert('Login Failed', 'Invalid id or password.');
       }
     } catch (error) {
       setIsLoading(false); // Hide loading dialog
@@ -51,7 +49,12 @@ export default function LoginPage() {
       console.error(error);
     }
   };
- 
+
+  // Toggle password visibility
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
+
   return (
     <>
       <StatusBar
@@ -76,7 +79,7 @@ export default function LoginPage() {
 
           <View style={styles.form}>
             <View style={styles.input}>
-              <Text style={styles.inputLabel}>Email / Mobile</Text>
+              <Text style={styles.inputLabel}>Mobile No</Text>
 
               <TextInput
                 autoCapitalize="none"
@@ -94,16 +97,25 @@ export default function LoginPage() {
             <View style={styles.input}>
               <Text style={styles.inputLabel}>Password</Text>
 
-              <TextInput
-                autoCorrect={false}
-                clearButtonMode="while-editing"
-                onChangeText={password => setForm({...form, password})}
-                placeholder="********"
-                placeholderTextColor="#6b7280"
-                style={styles.inputControl}
-                secureTextEntry={true}
-                value={form.password}
-              />
+              <View style={styles.passwordContainer}>
+                <TextInput
+                  autoCorrect={false}
+                  clearButtonMode="while-editing"
+                  onChangeText={password => setForm({...form, password})}
+                  placeholder="********"
+                  placeholderTextColor="#6b7280"
+                  style={styles.passwordInput}
+                  secureTextEntry={!showPassword}
+                  value={form.password}
+                />
+                <TouchableOpacity
+                  style={styles.eyeIconContainer}
+                  onPress={togglePasswordVisibility}>
+                  <Text style={styles.eyeIcon}>
+                    {showPassword ? '👁️' : '👁️‍🗨️'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
 
             <View style={styles.formAction}>
@@ -118,17 +130,17 @@ export default function LoginPage() {
               onPress={() => {
                 navigation.navigate('ForgetPassword');
               }}>
-              <Text style={styles.formLink}>Forgot password?</Text>
+              {/* <Text style={styles.formLink}>Forgot password?</Text> */}
             </TouchableOpacity>
           </View>
         </KeyboardAwareScrollView>
 
-        <TouchableOpacity onPress={() => {}}>
+        {/* <TouchableOpacity onPress={() => {}}>
           <Text style={styles.formFooter}>
             Don't have an account?{' '}
             <Text style={{textDecorationLine: 'underline'}}>Sign up</Text>
           </Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
 
         {/* Loading Modal */}
         <Modal visible={isLoading} transparent={true} animationType="fade">
@@ -220,6 +232,32 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#C9D3DB',
     borderStyle: 'solid',
+  },
+  // New styles for password visibility toggle
+  passwordContainer: {
+    flexDirection: 'row',
+    height: 50,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#C9D3DB',
+    borderStyle: 'solid',
+    alignItems: 'center',
+  },
+  passwordInput: {
+    flex: 1,
+    paddingHorizontal: 16,
+    fontSize: 15,
+    fontWeight: '500',
+    color: '#222',
+  },
+  eyeIconContainer: {
+    paddingHorizontal: 12,
+    height: '100%',
+    justifyContent: 'center',
+  },
+  eyeIcon: {
+    fontSize: 20,
   },
   btn: {
     flexDirection: 'row',

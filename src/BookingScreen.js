@@ -23,6 +23,8 @@ import {Alert} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
 import NoInternet from './NoInternet';
+
+
 const BookingScreen = () => {
   const [isConnected, setIsConnected] = useState(true);
   const navigation = useNavigation();
@@ -36,7 +38,7 @@ const BookingScreen = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const toggleDrawer = () => {
-    console.log('click');
+    // console.log('click');
     setDrawer(!drawer);
   };
   useEffect(() => {
@@ -92,6 +94,7 @@ const BookingScreen = () => {
           item =>
             item.service_type === 'Revisit' && item.request_close_time !== null,
         );
+        // console.log(revisitNotCloseList);
         setIncNotClose(incNotCloseList);
         setIncClose(incCloseList);
         setRevisitNotClose(revisitNotCloseList);
