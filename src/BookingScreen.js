@@ -24,7 +24,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
 import NoInternet from './NoInternet';
 
-
 const BookingScreen = () => {
   const [isConnected, setIsConnected] = useState(true);
   const navigation = useNavigation();
@@ -38,7 +37,7 @@ const BookingScreen = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const toggleDrawer = () => {
-    // console.log('click');
+  
     setDrawer(!drawer);
   };
   useEffect(() => {
@@ -63,12 +62,13 @@ const BookingScreen = () => {
         return;
       }
       let response;
-      if (parsedData.designation?.toLowerCase() == 'technician' ) {
+      if (parsedData.designation?.toLowerCase() == 'technician') {
         response = await getData(userId);
-      }
-       else if (
+      } else if (
         parsedData.designation?.toLowerCase() == 'soc team' ||
-        parsedData.designation?.toLowerCase() == 'others') {
+        parsedData.designation?.toLowerCase() == 'others'  ||
+        parsedData.designation?.toLowerCase() == 'trc team' 
+      ) {
         response = await getDataSoc(userId);
       } else {
         logOut();
@@ -77,6 +77,7 @@ const BookingScreen = () => {
       // console.log("IMEI Response Status:", response.status);
       if (response.status === 'success') {
         const data = response.data;
+        // console.log('Fetched Data:', data);
         setData(data);
         const incNotCloseList = data.filter(
           item =>
@@ -257,6 +258,40 @@ const BookingScreen = () => {
                 }}>
                 <Text style={styles.flightPrice}>Revisit</Text>
               </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.flightCard}
+                onPress={() => {
+                  navigation.navigate('TestSystem');
+                }}>
+                <Text style={styles.flightPrice}>Test System</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.flightCard}
+                onPress={() => {
+                  navigation.navigate('CheckComplaint');
+                }}>
+                <Text style={styles.flightPrice}>Check Complaint</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+          {profile.designation === 'trc team' && (
+            <View style={styles.recommendedContainer}>
+              <Text style={styles.recommendedTitle}>Services Type</Text>
+            
+              <TouchableOpacity
+                style={styles.flightCard}
+                onPress={() => {
+                  navigation.navigate('TestSystem');
+                }}>
+                <Text style={styles.flightPrice}>Test System</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.flightCard}
+                onPress={() => {
+                  navigation.navigate('CheckComplaint');
+                }}>
+                <Text style={styles.flightPrice}>Check Complaint</Text>
+              </TouchableOpacity>
             </View>
           )}
           <View style={[styles.recommendedContainer, {marginTop: 12}]}>
@@ -281,15 +316,15 @@ const BookingScreen = () => {
       {isLoading && (
         <View
           style={{
-            position:'absolute',
+            position: 'absolute',
             justifyContent: 'center',
-            top:0,
-            left:0,
-            right:0,
-            bottom:0,
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
             alignItems: 'center',
             flex: 1,
-            backgroundColor: 'rgba(0, 0, 0, 0.3)'
+            backgroundColor: 'rgba(0, 0, 0, 0.3)',
           }}>
           <ActivityIndicator
             size="large"

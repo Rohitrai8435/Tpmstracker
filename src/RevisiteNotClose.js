@@ -19,7 +19,7 @@ const RevisiteNotClose = () => {
   const route = useRoute();
   const {data} = route.params;
   const [filteredData, setFilteredData] = useState([]);
-  console.log(data);
+  // console.log(data);
 
   useEffect(() => {
     setFilteredData(data);
@@ -90,34 +90,45 @@ const RevisiteNotClose = () => {
         nav(item);
       }}>
       <Text style={styles.text}>
-        Site name: <Text style={{fontWeight: 'bold'}}>{item.site_name}</Text>
+        Site name:{' '}
+        <Text style={{fontWeight: 'bold', color: 'black'}}>
+          {item.site_name}
+        </Text>
       </Text>
       <Text style={styles.text}>
-        Global id:<Text style={{fontWeight: 'bold'}}>{item.site_id}</Text>
+        Global id:
+        <Text style={{fontWeight: 'bold', color: 'black'}}>{item.site_id}</Text>
       </Text>
       <Text style={styles.text}>
         complain_no:{' '}
-        <Text style={{fontWeight: 'bold'}}>{item.complain_no}</Text>
+        <Text style={{fontWeight: 'bold', color: 'black'}}>
+          {item.complain_no}
+        </Text>
       </Text>
       <Text style={styles.text}>
-        Circle: <Text style={{fontWeight: 'bold'}}>{item.state_name}</Text>
+        Circle:{' '}
+        <Text style={{fontWeight: 'bold', color: 'black'}}>
+          {item.state_name}
+        </Text>
       </Text>
       {profile?.designation?.toLowerCase() == 'technician' ? (
         <>
           <Text style={styles.text}>
-            Technician Name:
-            <Text style={{fontWeight: 'bold'}}>{item.technician_name}</Text>
+            Site Technician Name:
+            <Text style={{fontWeight: 'bold', color: 'black'}}>
+              {item.technician_name}
+            </Text>
           </Text>
           <Text
             style={[styles.text, styles.link]}
             onPress={() => makeCall(item.technician_mobile)}>
-            Technician Mobile: {item.technician_mobile}
+            Site Technician Mobile: {item.technician_mobile}
           </Text>
         </>
       ) : (
         <>
           <Text style={styles.text}>
-            Technician Name:
+           Technician Name:
             <Text style={{fontWeight: 'bold'}}>{item.name}</Text> {}
           </Text>
           <Text
@@ -130,7 +141,7 @@ const RevisiteNotClose = () => {
       <Text style={styles.text}>Insert Time: {item.insert_time}</Text>
 
       <Text style={styles.text}>
-        Remark by soc: {item.remark_soc ? item.remark_soc : 'NA'}
+       Pending Remark by Inc Team: {item.remark_soc ? item.remark_soc : 'NA'}
       </Text>
       <Text style={styles.text}>
         Complaine Remark:{' '}

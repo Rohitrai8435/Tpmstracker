@@ -55,19 +55,24 @@ const IncNotClose = () => {
     const url = `tel:${number}`;
     Linking.openURL(url).catch((err) => console.error('Error opening dialer', err));
   };
-  const renderItem = ({ item }) => (
-    <TouchableOpacity style={styles.card} onPress={() => { nav(item); }}>
+  const renderItem = ({item}) => (
+    <TouchableOpacity
+      style={styles.card}
+      onPress={() => {
+        nav(item);
+      }}>
       <Text style={styles.text}>Site name: {item.site_name}</Text>
       <Text style={styles.text}>Global id: {item.site_id}</Text>
       <Text style={styles.text}>Circle: {item.state_name}</Text>
       {profile?.designation?.toLowerCase() == 'technician' ? (
         <>
-          <Text style={styles.text}>Technician Name: {item.technician_name}</Text>
+          <Text style={styles.text}>
+           Site Technician Name: {item.technician_name}
+          </Text>
           <Text
             style={[styles.text, styles.link]}
-            onPress={() => makeCall(item.technician_mobile)}
-          >
-            Technician Mobile: {item.technician_mobile}
+            onPress={() => makeCall(item.technician_mobile)}>
+           Site Technician Mobile: {item.technician_mobile}
           </Text>
         </>
       ) : (
@@ -75,15 +80,17 @@ const IncNotClose = () => {
           <Text style={styles.text}>Technician Name: {item.name}</Text>
           <Text
             style={[styles.text, styles.link]}
-            onPress={() => makeCall(item.mobile)}
-          >
+            onPress={() => makeCall(item.mobile)}>
             Technician Mobile: {item.mobile}
           </Text>
         </>
       )}
       <Text style={styles.text}>Insert Time: {item.insert_time}</Text>
       <Text style={styles.text}>
-        Remark by soc: {item.remark_soc ? item.remark_soc : "NA"}
+        Pending Remark by Inc Team:
+        <Text style={{color: item.remark_soc ? 'red' : 'gray'}}>
+          {item.remark_soc ? item.remark_soc : 'NA'}
+        </Text>
       </Text>
     </TouchableOpacity>
   );
@@ -91,7 +98,7 @@ const IncNotClose = () => {
     <>
       <StatusBar translucent={true} backgroundColor="transparent" barStyle="dark-content" />
 
-      {/* Header */}
+      
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Back width={24} height={24} rotation={90} fill={'white'} />

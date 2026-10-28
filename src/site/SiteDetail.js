@@ -18,7 +18,7 @@ const SiteDetail = () =>{
   const route = useRoute();
   //862211070275458	//50
   const { imei,mode,version,color} = route.params;
-  console.log(imei,version);
+  // console.log(imei,version);
   const [isLoading, setIsLoading] = useState(true);
   const [hooterCnt, setHooterCnt] = useState(false);
   const [data, setData] = useState([]);
@@ -162,9 +162,9 @@ const SiteDetail = () =>{
         const { activeAlarms, pendingAlarms } = parseAlarmData(currentAlarm.data1);
         setCurrentAlarm(activeAlarms);
         setPendingAlarm(pendingAlarms);
-        console.log("Alarm Configue", alarmConfig);
-        console.log("Alarm ", data);
-        console.log("Current Alarm", currentAlarm.data1);
+        // console.log("Alarm Configue", alarmConfig);
+        // console.log("Alarm ", data);
+        // console.log("Current Alarm", currentAlarm.data1);
         setIsLoading(false);
       } catch (error) {
         setIsLoading(false);
@@ -212,7 +212,7 @@ const SiteDetail = () =>{
       try {
         setIsLoading(true);
         const currentAlarm = await getcurrentAlarmByImeiv2(imei);
-        console.log("helloe ",currentAlarm);
+        // console.log("helloe ",currentAlarm);
         if (currentAlarm && currentAlarm.data1){
           const uniqueAlarms = currentAlarm.data1.reduce((acc, curr) => {
             if (!acc.some(item => item.alarm === curr.alarm)) {
@@ -226,8 +226,8 @@ const SiteDetail = () =>{
         setCurrentAlarm(activeAlarms);
         setPendingAlarm(pendingAlarms);
        //console.log("Alarm Configue", alarmConfig);
-        console.log("Alarm ", data);
-        console.log("Current Alarm", currentAlarm.data1);
+        // console.log("Alarm ", data);
+        // console.log("Current Alarm", currentAlarm.data1);
         setIsLoading(false);
       } catch (error) {
         setIsLoading(false);
@@ -236,7 +236,7 @@ const SiteDetail = () =>{
         setIsLoading(true);
         const response = await getSiteDetailV2(imei);
           setLog(response.log);
-          console.log(response);
+          // console.log(response);
           setData(response.data);
           setAlarmCon(response.alarm_con);
           setSource(response.source);
@@ -247,7 +247,7 @@ const SiteDetail = () =>{
 
     }
       else if(version === "v1"){
-        console.log("inside loop",version);
+        // console.log("inside loop",version);
         try {
           try {
             setIsLoading(true);
@@ -255,7 +255,7 @@ const SiteDetail = () =>{
               console.log(response);
               setData(response.data[0]);
               setCurrentSiteStatusv1(response.current_site[0]);
-              console.log(data);
+              // console.log(data);
               setIsLoading(false);
            } catch (error) {
             setIsLoading(false);
@@ -263,7 +263,7 @@ const SiteDetail = () =>{
             try {
               setIsLoading(true);
               const response =await getAlarmV1(imei);
-              console.log(response);
+              // console.log(response);
               setLogv1(response.data);
               setIsLoading(false);
 

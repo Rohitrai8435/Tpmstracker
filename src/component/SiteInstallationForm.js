@@ -1166,7 +1166,7 @@ const SiteInstallationForm = () => {
               />
             </TouchableOpacity>
 
-            {/* No option */}
+            
             <TouchableOpacity
               style={styles.radioContainer}
               onPress={() =>
@@ -1181,7 +1181,7 @@ const SiteInstallationForm = () => {
               />
             </TouchableOpacity>
 
-            {/* Not Required option */}
+            
             <TouchableOpacity
               style={styles.radioContainer}
               onPress={() =>
@@ -2099,7 +2099,7 @@ const SiteInstallationForm = () => {
             value={newMaterial.quantity}
             onChangeText={text => updateNewMaterial('quantity', text)}
             placeholder="Quantity"
-            keyboardType="numeric"
+            
           />
         </View>
 

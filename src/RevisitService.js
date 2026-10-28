@@ -9,32 +9,302 @@ import {
   StatusBar,
   ScrollView,
   Alert,
+  Modal,
   PermissionsAndroid,
   ActivityIndicator,
   ToastAndroid,
 } from 'react-native';
-import React, {useState, useEffect, useContext} from 'react';
+import React, {useState, useEffect, useRef, useCallback} from 'react';
 import Back from '../assets/svg/drop.svg';
 import {useNavigation} from '@react-navigation/native';
 import axios from 'axios';
 import Geolocation from 'react-native-geolocation-service';
-import {launchCamera} from 'react-native-image-picker';
-import {getImei} from './service/ApiService';
+import {launchCamera, launchImageLibrary} from 'react-native-image-picker';
+import {get_all_product, get_all_sites_product} from './service/ApiService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Toast from 'react-native-toast-message';
 import NetInfo from '@react-native-community/netinfo';
 import NoInternet from './NoInternet';
-// import { ImeiContext } from './ImeiProvider';
+import FastImage from 'react-native-fast-image';
+import ImageResizer from 'react-native-image-resizer';
+import {SelectList} from 'react-native-dropdown-select-list';
+
+// const ProductDropdown = ({onProductSelect}) => {
+//   const [productList, setProductList] = useState([]);
+//   const [loading, setLoading] = useState(false);
+
+//   useEffect(() => {
+//     const controller = new AbortController();
+
+//     const fetchProducts = async () => {
+//       setLoading(true);
+//       try {
+//         const response = await get_all_product(controller.signal);
+//         if (response.status === 'success' && Array.isArray(response.data)) {
+//           const formatted = response.data.map(item => ({
+//             key: item.product_id,
+//             value: item.product_name,
+//           }));
+//           setProductList(formatted);
+//         } else {
+//           setProductList([]);
+//         }
+//       } catch (error) {
+//         if (error.name !== 'AbortError' && error.name !== 'CanceledError') {
+//           console.error('Failed to fetch products:', error);
+//         }
+//         setProductList([]);
+//       } finally {
+//         setLoading(false);
+//       }
+//     };
+
+//     fetchProducts();
+//     return () => controller.abort();
+//   }, []);
+
+//   const handleSelect = productId => {
+//     onProductSelect(productId);
+//   };
+
+//   return (
+//     <SelectList
+//       setSelected={handleSelect}
+//       placeholder={loading ? 'Loading products...' : 'Select Product'}
+//       data={productList}
+//       colors={{primary: '#fb703f', placeholder: '#888'}}
+//       save="key"
+//     />
+//   );
+// };
+const ProductDropdown = ({onProductSelect}) => {
+  const [productList, setProductList] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [selectedKey, setSelectedKey] = useState(null);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    const fetchProducts = async () => {
+      setLoading(true);
+      try {
+        const response = await get_all_product(controller.signal);
+        if (response.status === 'success' && Array.isArray(response.data)) {
+          const formatted = response.data.map(item => ({
+            key: item.product_id,
+            value: item.product_name,
+          }));
+          setProductList(formatted);
+        } else {
+          setProductList([]);
+        }
+      } catch (error) {
+        if (error.name !== 'AbortError' && error.name !== 'CanceledError') {
+          console.error('Failed to fetch products:', error);
+        }
+        setProductList([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProducts();
+    return () => controller.abort();
+  }, []);
+
+  const handleSelect = productId => {
+    setSelectedKey(productId);
+    onProductSelect(productId);
+  };
+
+  return (
+    <SelectList
+      setSelected={handleSelect}
+      placeholder={loading ? 'Loading products...' : 'Select Product'}
+      data={productList}
+      save="key"
+      boxStyles={{
+        borderColor: '#fb703f',
+        borderWidth: 1,
+        backgroundColor: '#fff',
+      }}
+      inputStyles={{
+        color: selectedKey ? '#000' : '#999',
+      }}
+      dropdownStyles={{
+        borderColor: '#fb703f',
+      }}
+      dropdownTextStyles={{
+        color: '#333',
+      }}
+    />
+  );
+};
+const SitIdDropdown = ({productId, onSiteSelect}) => {
+  const [siteData, setSiteData] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [search, setSearch] = useState('');
+  const [selectedLabel, setSelectedLabel] = useState('');
+  const controllerRef = useRef(null);
+  const debounceRef = useRef(null);
+
+  const fetchSites = useCallback(
+    async (query = '') => {
+      if (!productId) return;
+
+      if (controllerRef.current) {
+        controllerRef.current.abort();
+      }
+      const controller = new AbortController();
+      controllerRef.current = controller;
+
+      setLoading(true);
+      try {
+        const serviceType = 'Revisit'; // Adjust this if you have a specific service type
+        const userData = await AsyncStorage.getItem('userData');
+        const profile = JSON.parse(userData);
+
+        const response = await get_all_sites_product(
+          controller.signal,
+          productId,
+          serviceType,
+          profile,
+          query,
+          50,
+        );
+        if (response.status === 'success' && Array.isArray(response.data)) {
+          console.log('Fetched sites:', response.data.service_type);
+          setSiteData(response.data);
+        } else {
+          setSiteData([]);
+        }
+      } catch (error) {
+        if (error.name !== 'AbortError' && error.name !== 'CanceledError') {
+          console.error('Failed to fetch sites:', error);
+        }
+        setSiteData([]);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [productId],
+  );
+
+  useEffect(() => {
+    if (!productId) {
+      setSiteData([]);
+      setSelectedLabel('');
+      setSearch('');
+      return;
+    }
+    setSelectedLabel('');
+    setSearch('');
+    fetchSites('');
+  }, [productId, fetchSites]);
+
+  const handleSearchChange = text => {
+    setSearch(text);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      fetchSites(text);
+    }, 400);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      if (controllerRef.current) controllerRef.current.abort();
+    };
+  }, []);
+
+  const handleSelect = item => {
+    setSelectedLabel(`${item.site_id} - ${item.site_name}`);
+    setModalVisible(false);
+    setSearch('');
+    onSiteSelect(item);
+  };
+
+  const openModal = () => {
+    if (!productId) return;
+    setModalVisible(true);
+    if (siteData.length === 0) fetchSites('');
+  };
+
+  return (
+    <View>
+      <TouchableOpacity
+        onPress={openModal}
+        style={[styles.dropdownButton, !productId && styles.disabled]}
+        disabled={!productId}>
+        <Text style={styles.dropdownText}>
+          {!productId
+            ? 'Select a product first'
+            : selectedLabel || 'Select Site ID'}
+        </Text>
+      </TouchableOpacity>
+
+      <Modal visible={modalVisible} animationType="slide">
+        <View style={styles.modalContainer}>
+          <TextInput
+            placeholder="Search by site ID or name..."
+            value={search}
+            onChangeText={handleSearchChange}
+            style={styles.modalSearchInput}
+            autoFocus
+          />
+
+          {loading && <ActivityIndicator style={{marginVertical: 12}} />}
+
+          <FlatList
+            data={siteData}
+            keyExtractor={item => String(item.tracker_id)}
+            initialNumToRender={20}
+            maxToRenderPerBatch={20}
+            windowSize={10}
+            keyboardShouldPersistTaps="handled"
+            renderItem={({item}) => (
+              <TouchableOpacity
+                onPress={() => handleSelect(item)}
+                style={styles.itemRow}>
+                <Text
+                  style={
+                    styles.itemText
+                  }>{`${item.site_id} - ${item.site_name}`}</Text>
+              </TouchableOpacity>
+            )}
+            ListEmptyComponent={
+              !loading ? (
+                <Text style={styles.emptyText}>No sites found</Text>
+              ) : null
+            }
+          />
+
+          <TouchableOpacity
+            onPress={() => {
+              setModalVisible(false);
+              setSearch('');
+            }}
+            style={styles.closeButton}>
+            <Text style={styles.closeButtonText}>Close</Text>
+          </TouchableOpacity>
+        </View>
+      </Modal>
+    </View>
+  );
+};
 
 const RevisitService = () => {
   const [isConnected, setIsConnected] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
+
   const [isLoading, setIsLoading] = useState(false);
   const [timestampBefore, setTimeStampBefore] = useState([]);
   const [timestampAfter, setTimeStampAfter] = useState([]);
   const [uniqueId, setUniqueId] = useState(null);
-  const [options, setOptions] = useState([]);
-  const [filteredOptions, setFilteredOptions] = useState([]);
+
+  const [selectedProductId, setSelectedProductId] = useState(null);
+  const [selectedSite, setSelectedSite] = useState(null);
+
   const [selectedPhotos, setSelectedPhotos] = useState([
     null,
     null,
@@ -49,11 +319,7 @@ const RevisitService = () => {
     null,
     null,
   ]);
-  const [obj, setObj] = useState({
-    imei: '',
-    version: '',
-    global: '',
-  });
+
   const [profile, setProfile] = useState(null);
   const [uploadFileB, setuploadFileB] = useState(true);
   const [uploadFileA, setuploadFileA] = useState(true);
@@ -63,53 +329,34 @@ const RevisitService = () => {
   const [proublemType, setproublemType] = useState('');
   const [replaceRemark, setReplaceRemark] = useState('');
   const [ActualRemark, setActualRemark] = useState('');
-  
+
   const [siteStatus, SetsiteStatus] = useState('');
   const [wcc, setWcc] = useState([null, null]);
   const [photoCaption, setPhotoCaption] = useState([
-    'TPMS',
-    'TPMS open',
-    'TPMS Supply',
-    'Door Sensor',
-    'Hooter',
-    'Antenna',
-    'BB-1/BB-2/BB-3',
-    'Mains(MCB)',
-    'DG(MCB)',
-    'RRU',
-    'Tap to Upload Photo',
+    '',
+    '',
+    '',
+    '',
+    '',
+    '',
+    '',
+    '',
+    '',
+    '',
+    '',
   ]);
-
-  // const {options} = useContext(ImeiContext);
 
   const navigation = useNavigation();
   useEffect(() => {
-    const fetchAsy = async () => {
+    const fetchProfile = async () => {
       try {
         const userData = await AsyncStorage.getItem('userData');
-        const parsedData = JSON.parse(userData);
-        setProfile(parsedData);
-        // console.log(profile,"bmnmbmn")
-      } catch (error) {}
-      try {
-        const uploadData = await AsyncStorage.getItem('uploadData');
-        if (uploadData) {
-          const parsedUploadData = JSON.parse(uploadData);
-          setObj(
-            parsedUploadData.localObj || {imei: '', version: '', global: ''},
-          );
-          setUniqueId(parsedUploadData.uniqueId || null);
-          setComplainNo(parsedUploadData.complainNo || null);
-          setFaultyRemark(parsedUploadData.faultyRemark || '');
-          setSelectedPhotos(parsedUploadData.selectedPhotos || []);
-          setuploadFileB(false);
-          setSearchQuery(parsedUploadData.localObj.global);
-        }
+        setProfile(JSON.parse(userData));
       } catch (error) {
-        Alert.alert('Error fetching uploadData from AsyncStorage:', error);
+        console.error('Failed to load profile:', error);
       }
     };
-    fetchAsy();
+    fetchProfile();
   }, []);
 
   useEffect(() => {
@@ -118,69 +365,7 @@ const RevisitService = () => {
     });
     return () => unsubscribe();
   }, []);
-  const controller = new AbortController();
 
-  useEffect(() => {
-    const fetchImei = async () => {
-      try {
-        setIsLoading(true);
-        // Pass the signal to the getImei function
-        const response = await getImei(controller.signal);
-        // console.log('IMEI Response Status:', response.status);
-
-        if (response.status === 'success') {
-          console.log('api call successfully');
-          setOptions(response.data);
-        } else {
-          Alert.alert('Error', response.message || 'Unknown error');
-        }
-      } catch (error) {
-        if (axios.isCancel(error)) {
-          console.log('Request cancelled:', error.message);
-        } else {
-          Alert.alert('Error fetching IMEI:', error.message);
-        }
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchImei();
-
-    // Cleanup function to cancel the request
-    return () => {
-      controller.abort();
-      // console.log('api close');
-    };
-  }, []);
-
-  useEffect(() => {
-    const cleanedQuery = searchQuery.replace(/\s+/g, '').toLowerCase();
-    const filtered = options.filter(option =>
-      option.globel_id
-        .replace(/\s+/g, '')
-        .toLowerCase()
-        .startsWith(cleanedQuery),
-    );
-    AsyncStorage.removeItem('uploadData');
-    // console.log(filtered);
-    setFilteredOptions(filtered);
-  }, [searchQuery]);
-  useEffect(() => {
-    // console.log(filteredOptions, 'xcvc,vmxc.');
-    const cleanedQuery = searchQuery.replace(/\s+/g, '').toLowerCase();
-    const filtered = options.filter(option =>
-      option.globel_id
-        .replace(/\s+/g, '')
-        .toLowerCase()
-        .startsWith(cleanedQuery),
-    );
-    setComplainNo(filtered[0]?.complaint_no);
-    setFaultyRemark(filtered[0]?.problem_desc);
-    
-    setproublemType(filtered[0]?.problem_type);
-    SetsiteStatus(filtered[0]?.status);
-  }, [searchQuery]);
   const requestLocationPermission = async () => {
     try {
       if (Platform.OS === 'android') {
@@ -195,7 +380,7 @@ const RevisitService = () => {
           granted['android.permission.ACCESS_COARSE_LOCATION'] ===
             PermissionsAndroid.RESULTS.GRANTED
         ) {
-          console.log('Location permissions granted.');
+          // console.log('Location permissions granted.');
           getCurrentLocation();
         } else {
           Alert.alert(
@@ -207,7 +392,6 @@ const RevisitService = () => {
         getCurrentLocation();
       }
     } catch (err) {
-      console.log(err);
       Alert.alert(
         'Location permission is required to access your current location.',
       );
@@ -221,7 +405,6 @@ const RevisitService = () => {
           latitude: position.coords.latitude,
           longitude: position.coords.longitude,
         });
-        // console.log(position);
       },
       error => {
         Alert.alert(error.code, error.message);
@@ -235,31 +418,135 @@ const RevisitService = () => {
   }, []);
 
   const handlePhotoSelect = index => {
-    launchCamera({mediaType: 'photo', quality: 0.3}, response => {
+    Alert.alert(
+      'Select Photo',
+      'Choose an option',
+      [
+        {
+          text: 'Camera',
+          onPress: () => {
+            launchCamera({mediaType: 'photo', quality: 0.2}, response => {
+              processImage(response);
+            });
+          },
+        },
+        {
+          text: 'Gallery',
+          onPress: () => {
+            launchImageLibrary({mediaType: 'photo', quality: 0.2}, response => {
+              processImage(response);
+            });
+          },
+        },
+        {text: 'Cancel', style: 'cancel'},
+      ],
+      {cancelable: true},
+    );
+
+    async function processImage(response) {
       if (response.didCancel) {
         Alert.alert('User cancelled image picker');
-      } else if (response.errorMessage) {
-        Alert.alert('ImagePicker Error: ', response.errorMessage);
-      } else {
-        const uri = response.assets[0].uri;
+        return;
+      }
+
+      if (response.errorMessage) {
+        Alert.alert('ImagePicker Error:', response.errorMessage);
+        return;
+      }
+
+      const asset = response.assets?.[0];
+      if (!asset?.uri) {
+        Alert.alert('Error', 'No image URI returned');
+        return;
+      }
+
+      const {uri: originalUri, width, height} = asset; // original size
+
+      try {
+        // Re‑encode JPEG with same dimensions but lower quality
+        const compressedImage = await ImageResizer.createResizedImage(
+          originalUri,
+          width,
+          height,
+          'JPEG',
+          50,
+        );
+
+        const uri = compressedImage.uri;
+
+        // Update selectedPhotos array
         let newPhotos = [...selectedPhotos];
         newPhotos[index] = uri;
         setSelectedPhotos(newPhotos);
+
+        // Save timestamp
         const timestamp = new Date().toISOString();
         let newTimestamps = [...timestampBefore];
         newTimestamps[index] = timestamp;
         setTimeStampBefore(newTimestamps);
+      } catch (error) {
+        console.error('Image compression error:', error);
+        Alert.alert('Error', 'Failed to compress image');
       }
-    });
+    }
   };
+
   const handlePhotoSelectAfter = (index, isWCC = false) => {
-    launchCamera({mediaType: 'photo', quality: 0.3}, response => {
+    Alert.alert(
+      'Select Photo',
+      'Choose an option',
+      [
+        {
+          text: 'Camera',
+          onPress: () => {
+            launchCamera({mediaType: 'photo', quality: 0.2}, response => {
+              processImage(response);
+            });
+          },
+        },
+        {
+          text: 'Gallery',
+          onPress: () => {
+            launchImageLibrary({mediaType: 'photo', quality: 0.2}, response => {
+              processImage(response);
+            });
+          },
+        },
+        {text: 'Cancel', style: 'cancel'},
+      ],
+      {cancelable: true},
+    );
+
+    async function processImage(response) {
       if (response.didCancel) {
         Alert.alert('User cancelled image picker');
-      } else if (response.errorMessage) {
-        Alert.alert('ImagePicker Error: ', response.errorMessage);
-      } else {
-        const uri = response.assets[0].uri;
+        return;
+      }
+
+      if (response.errorMessage) {
+        Alert.alert('ImagePicker Error:', response.errorMessage);
+        return;
+      }
+
+      const asset = response.assets?.[0];
+      if (!asset?.uri) {
+        Alert.alert('Error', 'No image URI returned');
+        return;
+      }
+
+      const {uri: originalUri, width, height} = asset;
+
+      try {
+        const compressedImage = await ImageResizer.createResizedImage(
+          originalUri,
+          width,
+          height,
+          'JPEG',
+          50,
+        );
+
+        const uri = compressedImage.uri;
+
         if (isWCC) {
           let newPhotos = [...wcc];
           newPhotos[index] = {uri};
@@ -268,13 +555,17 @@ const RevisitService = () => {
           let newPhotos = [...selectedPhotosAfter];
           newPhotos[index] = uri;
           setSelectedPhotosAfter(newPhotos);
+
           const timestamp = new Date().toISOString();
           let newTimestamps = [...timestampAfter];
           newTimestamps[index] = timestamp;
           setTimeStampAfter(newTimestamps);
         }
+      } catch (error) {
+        console.error('Image compression error:', error);
+        Alert.alert('Error', 'Failed to compress image');
       }
-    });
+    }
   };
 
   const generateUniqueId = imeiP => {
@@ -286,58 +577,27 @@ const RevisitService = () => {
     return `${imei.slice(-4)}${longitude}${timestamp.slice(-2)}`;
   };
 
-  const handleUploadButtonClick = () => {
-    let localObj = {...obj};
-    if (searchQuery.length > 0 && !localObj?.imei) {
-      const cleanedQuery = searchQuery.trim().toLowerCase();
-      const filtered = options.filter(option =>
-        option.globel_id?.trim().toLowerCase().startsWith(cleanedQuery),
-      );
-
-      if (filtered.length > 0) {
-        localObj = {
-          imei: filtered[0].gsm_imei_no || '',
-          version: filtered[0].version || '',
-          global: filtered[0].globel_id || '',
-        };
-        setObj(localObj);
-        // console.log(obj);
-        // console.log('selected');
-      } else {
-        Alert.alert('Error', 'Respective Global ID not found in the database');
-        return;
-      }
-    }
-    if (!localObj?.imei) {
+  const handleUploadButtonClick = async () => {
+    if (selectedSite?.imei) {
       Alert.alert('Error', 'Global ID is missing.');
       return;
     }
-
     if (!location?.latitude || !location?.longitude) {
       Alert.alert('Error', 'Location coordinates are missing.');
       return;
     }
+
     if (!selectedPhotos || selectedPhotos.length === 0) {
       Alert.alert('Error', 'Please select at least one photo.');
       return;
     }
-    if (!faultyRemark || faultyRemark.trim() === '') {
-      Alert.alert('Error', 'Please fill Complain Remarks');
-      return;
-    }
-
-    if (!complainNo || complainNo.trim() == '') {
-      Alert.alert('Error', 'Please fill Complain Number');
-      return;
-    }
     setIsLoading(true);
+    // console.log('Selected Site:', selectedSite);
 
-    const uniqueId = generateUniqueId(localObj.imei);
+    const uniqueId = generateUniqueId(selectedSite?.imei);
     const currentTimestamp = new Date().toISOString();
-
     const formData = new FormData();
     formData.append('unique_id', uniqueId);
-    formData.append('imei', localObj.global);
     formData.append('tech_id', profile.id);
     formData.append('insert_time', currentTimestamp);
     formData.append('service_type', 'Revisit');
@@ -346,6 +606,47 @@ const RevisitService = () => {
     formData.append('location', `${location.latitude},${location.longitude}`);
     formData.append('complain_no', complainNo);
     formData.append('before_remark', faultyRemark);
+    formData.append('tracker_id', selectedSite?.tracker_id || '');
+    formData.append('ctmid', selectedSite?.ctmid || '');
+    formData.append('state_id', selectedSite?.state_id || '');
+    formData.append('dist_id', selectedSite?.dist_id || '');
+    formData.append('cluster_id', selectedSite?.cluster_id || '');
+    formData.append('aid_l1', selectedSite?.aid_l1 || '');
+    formData.append('aid_l2', selectedSite?.aid_l2 || '');
+    formData.append('aid_l3', selectedSite?.aid_l3 || '');
+    formData.append('aid_l4', selectedSite?.aid_l4 || '');
+    formData.append('aid_l5', selectedSite?.aid_l5 || '');
+    formData.append('techid', selectedSite?.techid || '');
+    formData.append('site_type', selectedSite?.site_type || '');
+    formData.append('product_type', selectedSite?.product_type || '');
+    formData.append('site_id', selectedSite?.site_id || '');
+    formData.append('imei', selectedSite?.site_id || '');
+    formData.append('site_name', selectedSite?.site_name || '');
+    formData.append('gsm_imei_no', selectedSite?.gsm_imei_no || '');
+    formData.append('system_serial_no', selectedSite?.system_serial_no || '');
+    formData.append('is_chargeable', selectedSite?.is_chargeable || '');
+    formData.append(
+      'system_version_type',
+      selectedSite?.system_version_type || '',
+    );
+    formData.append('i_c_date', selectedSite?.i_c_date || '');
+    formData.append(
+      'no_of_battery_bank',
+      selectedSite?.no_of_battery_bank || '',
+    );
+    formData.append('battery_bank_one', selectedSite?.battery_bank_one || '');
+    formData.append('battery_bank_two', selectedSite?.battery_bank_two || '');
+    formData.append(
+      'battery_bank_three',
+      selectedSite?.battery_bank_three || '',
+    );
+    formData.append('battery_bank_four', selectedSite?.battery_bank_four || '');
+    formData.append('ch1', selectedSite?.ch1 || '');
+    formData.append('ch2', selectedSite?.ch2 || '');
+    formData.append('ch3', selectedSite?.ch3 || '');
+    formData.append('ch4', selectedSite?.ch4 || '');
+    formData.append('ch5', selectedSite?.ch5 || '');
+
     selectedPhotos.forEach((photo, index) => {
       if (photo) {
         formData.append('image[]', {
@@ -358,42 +659,48 @@ const RevisitService = () => {
         }
       }
     });
-    axios
-      .post(
+
+    try {
+      const response = await axios.post(
         'https://dashboard.shrotitele.com/apitpms/TpmsTracker/revisit_insertdata',
         formData,
         {
           headers: {'Content-Type': 'multipart/form-data'},
         },
-      )
-      .then(response => {
-        Alert.alert('Upload Successful', response.data.message);
+      );
+
+      if (response?.data?.status) {
+        showToast(response?.data?.message, '');
+
         const dataToSave = {
-          localObj,
           uniqueId,
           complainNo,
           faultyRemark,
+          proublemType,
+          siteStatus,
           selectedPhotos,
           uploadB: false,
         };
-        AsyncStorage.setItem('uploadData', JSON.stringify(dataToSave))
-          .then(() => console.log('Specific data saved successfully'))
-          .catch(error => Alert.alert('Error saving data:', error));
+
+        try {
+          await AsyncStorage.setItem('uploadData', JSON.stringify(dataToSave));
+        } catch (storageError) {
+          Alert.alert('Error saving data', storageError.message);
+        }
+
         setuploadFileB(false);
-        setIsLoading(false);
         setUniqueId(uniqueId);
-      })
-      .catch(error => {
-        setIsLoading(false);
-        console.log('Error uploading images:', error);
-        Alert.alert(
-          'Upload Failed',
-          'There was an error uploading your images.',
-        );
-      });
+      } else {
+        Alert.alert('Upload Failed', response?.data?.message);
+      }
+    } catch (error) {
+      Alert.alert('Upload Failed', 'There was an error uploading your images.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleUploadAfter = () => {
+  const handleUploadAfter = async () => {
     if (!uniqueId) {
       Alert.alert(
         'Before Section Images are Not Uploaded',
@@ -418,7 +725,7 @@ const RevisitService = () => {
     if (wcc.some(photo => photo === null)) {
       Alert.alert(
         'Error',
-        'Please upload both WCC image && Your image with PPE kit',
+        'Please Upload System Serial Number and Selfi with Technician with PPE Kit',
       );
       return;
     }
@@ -445,7 +752,6 @@ const RevisitService = () => {
           type: 'image/jpeg',
         });
         if (timestampAfter[index]) {
-          // console.log('index', timestampAfter[index]);
           formData.append(`timestamp[${index}]`, timestampAfter[index]);
         }
       }
@@ -461,64 +767,34 @@ const RevisitService = () => {
       )
       .then(response => {
         setIsLoading(false);
-        //console.log('Upload response:', response.data);
-        Alert.alert('Upload Successful', response.data.message);
 
-        let localObj = {...obj};
-        if (searchQuery.length > 0 && !localObj?.imei) {
-          const cleanedQuery = searchQuery.trim().toLowerCase();
-          const filtered = options.filter(option =>
-            option.globel_id?.trim().toLowerCase().startsWith(cleanedQuery),
-          );
-
-          if (filtered.length > 0) {
-            localObj = {
-              imei: filtered[0]?.gsm_imei_no || '',
-              version: filtered[0]?.version || '',
-              global: filtered[0]?.globel_id || '',
-            };
-            setObj(localObj); // Update the state
-            console.log('selected');
-            console.log(obj);
-          } else {
-            Alert.alert(
-              'Error',
-              'Respective Global ID not found in the database',
-            );
+        if (response?.data?.status) {
+          if (selectedSite?.imei) {
+            Alert.alert('Error', 'First select a site by Global ID.');
             return;
           }
-        }
+          showToast(response?.data?.message, '');
+          navigation.navigate('BookingScreen');
 
-        if (!localObj.imei || !localObj.version) {
-          Alert.alert('Error', 'First select a site by Global ID.');
-          return;
-        }
-
-        navigation.navigate('wccform', {
-          imei: localObj?.imei,
-          mode: false,
-          uniqueId: uniqueId,
-          complainNo: complainNo,
-          serviceType: 'Revisit',
-          technicianName: profile.name,
-          version: localObj.version,
-          color: '#fb703f',
-        });
-        setuploadFileA(false);
-        try {
-          AsyncStorage.removeItem('uploadData');
-          //Alert.alert('uploadData successfully removed from AsyncStorage.');
-        } catch (error) {
-          Alert.alert('Error removing uploadData from AsyncStorage:', error);
+          setuploadFileA(false);
+          try {
+            AsyncStorage.removeItem('uploadData');
+          } catch (error) {
+            Alert.alert('Error removing uploadData from AsyncStorage:', error);
+          }
+        } else {
+          Alert.alert('Upload Failed', response?.data?.message);
         }
       })
       .catch(error => {
         setIsLoading(false);
-
         Alert.alert(
           'Upload Failed',
           'There was an error uploading your images.',
         );
+      })
+      .finally(() => {
+        setIsLoading(false);
       });
   };
   const showToast = (title, message) => {
@@ -527,40 +803,6 @@ const RevisitService = () => {
       type: 'success',
       text1: title,
       text2: message,
-    });
-  };
-
-  const siteDetail = () => {
-    let localObj = {...obj};
-    if (searchQuery.length > 0 && !localObj?.imei) {
-      const cleanedQuery = searchQuery.trim().toLowerCase();
-      const filtered = options.filter(option =>
-        option.globel_id?.trim().toLowerCase().startsWith(cleanedQuery),
-      );
-
-      if (filtered.length > 0) {
-        localObj = {
-          imei: filtered[0].gsm_imei_no || '',
-          version: filtered[0].version || '',
-          global: filtered[0].globel_id || '',
-        };
-        setObj(localObj); // Update the state
-        // console.log('selected');
-      } else {
-        Alert.alert('Error', 'Respective Global ID not found in the database');
-        return;
-      }
-    }
-
-    if (!localObj.imei || !localObj.version) {
-      Alert.alert('Error', 'First select a site by Global ID.');
-      return;
-    }
-    navigation.navigate('SiteDetail', {
-      imei: localObj.imei,
-      mode: false,
-      version: localObj.version,
-      color: '#fcad2e',
     });
   };
 
@@ -580,120 +822,99 @@ const RevisitService = () => {
         <Text style={styles.headerText}>REVISIT</Text>
       </View>
       <Toast></Toast>
-      {isLoading ? (
-        <View
-          style={{
-            justifyContent: 'center',
-            alignItems: 'center',
-            flex: 1,
-            backgroundColor: 'white',
-          }}>
-          <ActivityIndicator
-            size="large"
-            width={50}
-            height={50}
-            color={['#0a478f', '#54c9b2', '#e8c592', '#e861af']}
-          />
-          <Text
-            style={{
-              fontFamily: 'AndadaPro-Regular',
-              marginTop: 10,
-              fontSize: 20,
-              color: 'black',
-            }}>
-            Data is loading...
-          </Text>
-        </View>
-      ) : (
-        <ScrollView style={styles.container}>
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Enter Global ID"
-            placeholderTextColor={'#888'}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
-          {searchQuery.length > 0 && (
-            <FlatList
-              data={filteredOptions}
-              keyExtractor={(item, index) => index.toString()}
-              renderItem={({item}) => (
-                <TouchableOpacity
-                  style={styles.option}
-                  onPress={() => {
-                    showToast('Global id', 'Global id selected successfully');
-                    setSearchQuery(item.globel_id);
-                    setObj({
-                      imei: item.gsm_imei_no,
-                      version: item.version,
-                      global: item.globel_id,
-                    });
-                  }}>
-                  <Text style={styles.optionText}>{item.globel_id}</Text>
-                  <Text style={[styles.optionText, {fontSize: 10}]}>
-                    {item.site_name}
-                  </Text>
-                </TouchableOpacity>
+
+      <ScrollView style={styles.container}>
+        <ProductDropdown onProductSelect={setSelectedProductId} />
+        <SitIdDropdown
+          productId={selectedProductId}
+          onSiteSelect={site => {
+            setSelectedSite(site);
+            setComplainNo(site?.complaint_no);
+            setFaultyRemark(site?.problem_desc);
+
+            setproublemType(site?.problem_type);
+            SetsiteStatus(site?.status);
+          }}
+        />
+
+        <Text style={styles.uploadLabel}>Complaint No:</Text>
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Enter Complain No"
+          placeholderTextColor={'#888'}
+          value={complainNo}
+          readOnly={true}
+          onChangeText={setComplainNo}
+        />
+        <Text style={styles.uploadLabel}>Complaint Status:</Text>
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Complaint Status"
+          placeholderTextColor={'#888'}
+          readOnly={true}
+          value={siteStatus}
+          onChangeText={SetsiteStatus}
+        />
+        <Text style={styles.uploadLabel}>Complaint Remarks:</Text>
+        <TextInput
+          style={[styles.searchInput, {marginTop: 0, marginBottom: 10}]}
+          placeholder="Enter Complaint Remarks"
+          placeholderTextColor={'#888'}
+          readOnly={true}
+          value={faultyRemark}
+          onChangeText={setFaultyRemark}
+        />
+        <Text style={styles.uploadLabel}>Proublem Type:</Text>
+        <TextInput
+          style={[styles.searchInput, {marginTop: 0, marginBottom: 10}]}
+          placeholder="Enter Complaint Remarks"
+          placeholderTextColor={'#888'}
+          value={proublemType}
+          readOnly={true}
+          onChangeText={setproublemType}
+        />
+        <Text style={styles.uploadLabel}>Before Work Photos:</Text>
+        <View style={styles.photoContainer}>
+          {selectedPhotos.map((photo, index) => (
+            <TouchableOpacity
+              key={index}
+              style={styles.photoSlot}
+              onPress={() => handlePhotoSelect(index)}>
+              {photo ? (
+                <FastImage source={{uri: photo}} style={styles.photo} />
+              ) : (
+                <Text style={styles.placeholderText}>
+                  Tap to Upload Photo{index + 1}
+                </Text>
               )}
+            </TouchableOpacity>
+          ))}
+        </View>
+        {isLoading ? (
+          <View
+            style={{
+              justifyContent: 'center',
+              alignItems: 'center',
+              flex: 1,
+              backgroundColor: 'white',
+            }}>
+            <ActivityIndicator
+              size="large"
+              width={50}
+              height={50}
+              color={['#0a478f', '#54c9b2', '#e8c592', '#e861af']}
             />
-          )}
-          <Text style={styles.uploadLabel}>Complain No:</Text>
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Enter Complain No"
-            placeholderTextColor={'#888'}
-            value={complainNo}
-            readOnly={true}
-            onChangeText={setComplainNo}
-          />
-          <Text style={styles.uploadLabel}>Complain Status:</Text>
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Complain Status"
-            placeholderTextColor={'#888'}
-            readOnly={true}
-            value={siteStatus}
-            onChangeText={SetsiteStatus}
-          />
-
-          <Text style={styles.uploadLabel}>Complaine Remarks:</Text>
-
-          <TextInput
-            style={[styles.searchInput, {marginTop: 0, marginBottom: 10}]}
-            placeholder="Enter Complaine Remarks"
-            placeholderTextColor={'#888'}
-            readOnly={true}
-            value={faultyRemark}
-            onChangeText={setFaultyRemark}
-          />
-          <Text style={styles.uploadLabel}>Proublem Type:</Text>
-
-          <TextInput
-            style={[styles.searchInput, {marginTop: 0, marginBottom: 10}]}
-            placeholder="Enter Complain Remarks"
-            placeholderTextColor={'#888'}
-            value={proublemType}
-            readOnly={true}
-            onChangeText={setproublemType}
-          />
-          <Text style={styles.uploadLabel}>Before Work Photos:</Text>
-          <View style={styles.photoContainer}>
-            {selectedPhotos.map((photo, index) => (
-              <TouchableOpacity
-                key={index}
-                style={styles.photoSlot}
-                onPress={() => handlePhotoSelect(index)}>
-                {photo ? (
-                  <Image source={{uri: photo}} style={styles.photo} />
-                ) : (
-                  <Text style={styles.placeholderText}>
-                    Tap to Upload Photo{index + 1}
-                  </Text>
-                )}
-              </TouchableOpacity>
-            ))}
+            <Text
+              style={{
+                fontFamily: 'AndadaPro-Regular',
+                marginTop: 10,
+                fontSize: 20,
+                color: 'black',
+              }}>
+              Data is loading...
+            </Text>
           </View>
-
+        ) : (
           <TouchableOpacity
             style={styles.flightCard}
             onPress={() => {
@@ -706,75 +927,99 @@ const RevisitService = () => {
             }}>
             <Text style={styles.flightPrice}>Upload Photo</Text>
           </TouchableOpacity>
-          <Text style={styles.uploadLabel}>Actual Remark:</Text>
-          <TextInput
-            style={[styles.searchInput, {marginTop: 0, marginBottom: 10}]}
-            placeholder="Enter Actual Remarks"
-            placeholderTextColor={'#888'}
-            value={ActualRemark}
-            onChangeText={setActualRemark}
-          />
-          <Text style={styles.uploadLabel}>Action Taken:</Text>
-          <TextInput
-            style={[styles.searchInput, {marginTop: 0, marginBottom: 10}]}
-            placeholder="Enter Action Taken"
-            placeholderTextColor={'#888'}
-            value={replaceRemark}
-            onChangeText={setReplaceRemark}
-          />
-
-          <Text style={styles.uploadLabel}>After Work Photos:</Text>
-          <View style={styles.photoContainer}>
-            {selectedPhotosAfter.map((photo, index) => (
-              <TouchableOpacity
-                key={index}
-                style={styles.photoSlot}
-                onPress={() => handlePhotoSelectAfter(index)}>
-                {photo ? (
-                  <Image source={{uri: photo}} style={styles.photo} />
-                ) : (
-                  <Text style={styles.placeholderText}>
-                    {index < photoCaption.length
-                      ? 'Tap to Upload ' + photoCaption[index] + ' Photo'
-                      : 'Tap to Upload Photo'}
-                  </Text>
-                )}
-              </TouchableOpacity>
-            ))}
-            {selectedPhotosAfter.length < 20 && (
-              <TouchableOpacity
-                style={[styles.photoSlot, styles.addMoreButton]}
-                onPress={() => {
-                  const updatedPhotos = [...selectedPhotosAfter, null];
-                  setSelectedPhotosAfter(updatedPhotos);
-                }}>
-                <Text style={[styles.addMoreText, {color: 'orange'}]}>
-                  + Add More
+        )}
+        <Text style={styles.uploadLabel}>Actual Remark:</Text>
+        <TextInput
+          style={[styles.searchInput, {marginTop: 0, marginBottom: 10}]}
+          placeholder="Enter Actual Remarks"
+          placeholderTextColor={'#888'}
+          value={ActualRemark}
+          onChangeText={setActualRemark}
+        />
+        <Text style={styles.uploadLabel}>Action Taken:</Text>
+        <TextInput
+          style={[styles.searchInput, {marginTop: 0, marginBottom: 10}]}
+          placeholder="Enter Action Taken"
+          placeholderTextColor={'#888'}
+          value={replaceRemark}
+          onChangeText={setReplaceRemark}
+        />
+        <Text style={styles.uploadLabel}>After Work Photos:</Text>
+        <View style={styles.photoContainer}>
+          {selectedPhotosAfter.map((photo, index) => (
+            <TouchableOpacity
+              key={index}
+              style={styles.photoSlot}
+              onPress={() => handlePhotoSelectAfter(index)}>
+              {photo ? (
+                <Image source={{uri: photo}} style={styles.photo} />
+              ) : (
+                <Text style={styles.placeholderText}>
+                  {index < photoCaption.length
+                    ? 'Tap to Upload ' + photoCaption[index] + ' Photo'
+                    : 'Tap to Upload Photo'}
                 </Text>
-              </TouchableOpacity>
-            )}
-            {wcc.map((photo, index) => (
-              <TouchableOpacity
-                key={index}
-                style={styles.photoSlot}
-                onPress={() => handlePhotoSelectAfter(index, true)} // Call handlePhotoSelectAfter for WCC
-              >
-                {photo && photo.uri ? (
-                  <Image source={{uri: photo.uri}} style={styles.photo} /> // Use photo.uri
-                ) : (
-                  <Text
-                    style={[
-                      styles.placeholderText,
-                      {color: 'green', textAlign: 'center'},
-                    ]}>
-                    {index === 0
-                      ? 'System Serial Number'
-                      : 'Selfi with Technician with PPE Kit'}
-                  </Text>
-                )}
-              </TouchableOpacity>
-            ))}
+              )}
+            </TouchableOpacity>
+          ))}
+          {selectedPhotosAfter.length < 20 && (
+            <TouchableOpacity
+              style={[styles.photoSlot, styles.addMoreButton]}
+              onPress={() => {
+                const updatedPhotos = [...selectedPhotosAfter, null];
+                setSelectedPhotosAfter(updatedPhotos);
+              }}>
+              <Text style={[styles.addMoreText, {color: 'orange'}]}>
+                + Add More
+              </Text>
+            </TouchableOpacity>
+          )}
+          {wcc.map((photo, index) => (
+            <TouchableOpacity
+              key={index}
+              style={styles.photoSlot}
+              onPress={() => handlePhotoSelectAfter(index, true)}>
+              {photo && photo.uri ? (
+                <Image source={{uri: photo.uri}} style={styles.photo} />
+              ) : (
+                <Text
+                  style={[
+                    styles.placeholderText,
+                    {color: 'green', textAlign: 'center'},
+                  ]}>
+                  {index === 0
+                    ? 'System Serial Number'
+                    : 'Selfi with Technician with PPE Kit'}
+                </Text>
+              )}
+            </TouchableOpacity>
+          ))}
+        </View>
+        {isLoading ? (
+          <View
+            style={{
+              justifyContent: 'center',
+              alignItems: 'center',
+              flex: 1,
+              backgroundColor: 'white',
+            }}>
+            <ActivityIndicator
+              size="large"
+              width={50}
+              height={50}
+              color={['#0a478f', '#54c9b2', '#e8c592', '#e861af']}
+            />
+            <Text
+              style={{
+                fontFamily: 'AndadaPro-Regular',
+                marginTop: 10,
+                fontSize: 20,
+                color: 'black',
+              }}>
+              Data is loading...
+            </Text>
           </View>
+        ) : (
           <TouchableOpacity
             style={styles.flightCard}
             onPress={() => {
@@ -787,15 +1032,15 @@ const RevisitService = () => {
             }}>
             <Text style={styles.flightPrice}>Upload Photo</Text>
           </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.flightCard, {marginBottom: 50}]}
-            onPress={() => {
-              siteDetail();
-            }}>
-            <Text style={styles.flightPrice}>Site Detail</Text>
-          </TouchableOpacity>
-        </ScrollView>
-      )}
+        )}
+        {/* <TouchableOpacity
+          style={[styles.flightCard, {marginBottom: 50}]}
+          onPress={() => {
+            siteDetail();
+          }}>
+          <Text style={styles.flightPrice}>Site Detail</Text>
+        </TouchableOpacity> */}
+      </ScrollView>
     </>
   ) : (
     <NoInternet></NoInternet>
@@ -808,9 +1053,8 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingTop: StatusBar.currentHeight,
-    paddingBottom: 20,
     paddingTop: 60,
+    paddingBottom: 20,
     paddingHorizontal: 20,
     backgroundColor: '#fcad2e',
   },
@@ -853,6 +1097,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     paddingHorizontal: 5,
     elevation: 2,
+    color: '#888',
   },
   option: {
     paddingVertical: 10,
@@ -899,7 +1144,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   flightCard: {
-    backgroundColor: '#fcad2e',
+    backgroundColor: '#fb703f',
     padding: 16,
     borderRadius: 10,
     marginBottom: 10,
@@ -914,5 +1159,59 @@ const styles = StyleSheet.create({
     fontFamily: 'AndadaPro-Regular',
     color: '#fff',
     textAlign: 'center',
+  },
+  modalSearchInput: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 6,
+    padding: 10,
+    marginBottom: 8,
+    color: '#333', // ✅ added — was missing, typed text had no explicit color
+  },
+  dropdownButton: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 6,
+    padding: 12,
+    backgroundColor: '#fff',
+  },
+  dropdownText: {
+    // ✅ added — was completely missing, this is why selected label was invisible
+    color: '#333',
+    fontSize: 15,
+  },
+  disabled: {
+    backgroundColor: '#f0f0f0',
+  },
+  modalContainer: {
+    flex: 1,
+    padding: 16,
+    paddingTop: 48,
+    backgroundColor: '#fff',
+  },
+  itemRow: {
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  itemText: {
+    color: '#333',
+    fontSize: 15,
+  },
+  closeButton: {
+    marginTop: 12,
+    paddingVertical: 12,
+    alignItems: 'center',
+    backgroundColor: '#f0f0f0',
+    borderRadius: 6,
+  },
+  closeButtonText: {
+    color: '#007AFF',
+    fontWeight: '600',
+  },
+  emptyText: {
+    textAlign: 'center',
+    marginTop: 20,
+    color: '#888',
   },
 });

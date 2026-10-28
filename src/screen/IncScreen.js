@@ -18,7 +18,7 @@ import {
 import React, {useState, useEffect} from 'react';
 import Back from '../../assets/svg/drop.svg';
 import {useNavigation, useRoute} from '@react-navigation/native';
-import {launchCamera} from 'react-native-image-picker';
+import {launchCamera, launchImageLibrary} from 'react-native-image-picker';
 import {
   closeRequest,
   getDetailOfCard,
@@ -28,16 +28,21 @@ import FastImage from 'react-native-fast-image';
 import axios from 'axios';
 import EditIcon from '../../assets/svg/edit.svg';
 import RNFS from 'react-native-fs';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import Toast from 'react-native-toast-message';
+import ImageResizer from 'react-native-image-resizer';
 
 const IncScreen = () => {
   const navigation = useNavigation();
+  const [profile, setProfile] = useState(null);
   const [version, setVersion] = useState(null);
   const [beforeList, setBeforeList] = useState([]);
   const [afterList, setAfterList] = useState([]);
   const [wcc, setWcc] = useState([]);
   const route = useRoute();
   const {item, color} = route.params;
-  console.log(item);
+  // console.log(item, 'item');
+  
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [selectedImage, setSelectedImage] = useState({
     imageUrl: null,
@@ -56,7 +61,6 @@ const IncScreen = () => {
   const [service_type, Setservice_type] = useState('');
   const [unique_id, setunique_id] = useState('');
 
-
   const [selectedPhotos, setSelectedPhotos] = useState([
     {uri: null, type: 'Before'},
   ]);
@@ -65,125 +69,29 @@ const IncScreen = () => {
   ]);
 
   // console.log(item, 'todo');
-  useEffect(() => {
-    if (item.request_close_time == null) {
-      setItemState(true);
-    }
 
-    setvisitRemark(item?.before_remark);
-    setAfterRemark(item?.after_remark);
-    setActualRemark(item?.actualRemark);
-    Setservice_type(item?.service_type);
-    setunique_id(item?.unique_id);
-  }, [item.request_close_time]);
-
-  const formatDateTime = isoTime => {
-    try {
-      const dateObj = new Date(isoTime);
-      if (isNaN(dateObj)) {
-        throw new Error('Invalid date format');
-      }
-      const date = isoTime.split('T')[0];
-      const hours = dateObj.getHours();
-      const minutes = dateObj.getMinutes().toString().padStart(2, '0');
-      const ampm = hours >= 12 ? 'PM' : 'AM';
-      const formattedHours = hours % 12 || 12;
-      const time = `${formattedHours}:${minutes} ${ampm}`;
-      return `${date} ${time}`;
-    } catch (error) {
-      console.log('Date parsing error:', error.message);
-      return 'Invalid date';
-    }
+useEffect(() => {
+  const getprofile = async () => {
+    const userData = await AsyncStorage.getItem('userData');
+    const parsedData = JSON.parse(userData);
+    setProfile(parsedData);
+    console.log(profile);
   };
-  const handleImagePress = (imageUrl, imageTime) => {
-    const formattedTime = formatDateTime(imageTime);
-    setSelectedImage({imageUrl, time: formattedTime});
-    setIsModalVisible(true);
-  };
+  getprofile();
+}, [item]);
 
-  const handleConsole = (id, oldimageurl, unique_id) => {
-    launchCamera({mediaType: 'photo', quality: 0.3}, async response => {
-      if (response.didCancel) {
-        console.log('User cancelled image picker');
-      } else if (response.errorMessage) {
-        console.log('ImagePicker Error: ', response.errorMessage);
-      } else {
-        const uri = response.assets[0].uri;
 
-        try {
-          // Convert image file to Base64
-          const base64Image = await RNFS.readFile(uri, 'base64');
-          const imageData = `data:image/jpeg;base64,${base64Image}`;
 
-          // Update state with Base64 image instead of file URI
-          setUpdatedPhotos(
-            prevPhotos =>
-              prevPhotos.some(p => p.id === id)
-                ? prevPhotos.map(p =>
-                    p.id === id
-                      ? {id, imageurl: imageData, oldimageurl, unique_id}
-                      : p,
-                  ) // Replace existing entry
-                : [
-                    ...prevPhotos,
-                    {id, imageurl: imageData, oldimageurl, unique_id},
-                  ], // Add new entry if not found
-          );
-
-          // console.log('Updated Photos:', updatedPhotos);
-        } catch (error) {
-          console.log('Error converting image to base64:', error);
-        }
-      }
-    });
-  };
-  const handleclickwcc = (id, oldimageurl, unique_id) => {
-    launchCamera({mediaType: 'photo', quality: 0.3}, async response => {
-      if (response.didCancel) {
-        console.log('User cancelled image picker');
-      } else if (response.errorMessage) {
-        console.log('ImagePicker Error: ', response.errorMessage);
-      } else {
-        const uri = response.assets[0].uri;
-
-        try {
-          // Convert image file to Base64
-          const base64Image = await RNFS.readFile(uri, 'base64');
-          const imageData = `data:image/jpeg;base64,${base64Image}`;
-
-          // Update state with base64 data instead of file URI
-          setWccudt(
-            prevPhotos =>
-              prevPhotos.some(p => p.id === id)
-                ? prevPhotos.map(p =>
-                    p.id === id
-                      ? {id, imageurl: imageData, oldimageurl, unique_id}
-                      : p,
-                  ) // Replace existing entry
-                : [
-                    ...prevPhotos,
-                    {id, imageurl: imageData, oldimageurl, unique_id},
-                  ], // Add new entry
-          );
-
-          console.log('Updated WCC Images:', wccudt);
-        } catch (error) {
-          console.log('Error converting image to base64:', error);
-        }
-      }
-    });
-  };
-
-  const controller = new AbortController();
+const controller = new AbortController();
   useEffect(() => {
     const fetchData = async () => {
       try {
+       
         const response = await getDetailOfCard(
           item.unique_id,
           item.imei,
           controller.signal,
         );
-
         setVersion(response.dataVersion[0]?.version);
         setWcc(response.wcc);
         // console.log(response.wcc);
@@ -222,11 +130,413 @@ const IncScreen = () => {
     };
   }, [item]);
 
+  
+  
+
+  useEffect(() => {
+    if (
+      item?.request_close_time == null &&
+      item?.remark_soc == null 
+     
+    ) {
+      setItemState(true);
+    }
+    setvisitRemark(item?.before_remark);
+    setAfterRemark(item?.after_remark);
+    setActualRemark(item?.actualRemark);
+    Setservice_type(item?.service_type);
+    setunique_id(item?.unique_id);
+  }, [item.request_close_time]);
+
   const handleEdit = () => {
     if (isEditable) {
       setIsEditable(false);
     } else {
       setIsEditable(true);
+    }
+  };
+
+  const formatDateTime = isoTime => {
+    try {
+      const dateObj = new Date(isoTime);
+      if (isNaN(dateObj)) {
+        throw new Error('Invalid date format');
+      }
+      const date = isoTime.split('T')[0];
+      const hours = dateObj.getHours();
+      const minutes = dateObj.getMinutes().toString().padStart(2, '0');
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+      const formattedHours = hours % 12 || 12;
+      const time = `${formattedHours}:${minutes} ${ampm}`;
+      return `${date} ${time}`;
+    } catch (error) {
+      console.log('Date parsing error:', error.message);
+      return 'Invalid date';
+    }
+  };
+  const handleImagePress = (imageUrl, imageTime) => {
+    const formattedTime = formatDateTime(imageTime);
+    setSelectedImage({imageUrl, time: formattedTime});
+    setIsModalVisible(true);
+  };
+
+  // const handleConsole = (id, oldimageurl, unique_id) => {
+  //   Alert.alert(
+  //     'Select Photo',
+  //     'Choose an option',
+  //     [
+  //       {
+  //         text: 'Camera',
+  //         onPress: () => {
+  //           launchCamera({mediaType: 'photo', quality: 1,includeExtra:true}, async response => {
+  //             await processConsole(response);
+  //           });
+  //         },
+  //       },
+  //       {
+  //         text: 'Gallery',
+  //         onPress: () => {
+  //           launchImageLibrary(
+  //             {mediaType: 'photo', quality: 1,includeExtra:true},
+  //             async response => {
+  //               await processConsole(response);
+  //             },
+  //           );
+  //         },
+  //       },
+  //       {text: 'Cancel', style: 'cancel'},
+  //     ],
+  //     {cancelable: true},
+  //   );
+
+  //   async function processConsole(response) {
+  //     if (response.didCancel) {
+  //       Alert.alert('User cancelled image picker');
+  //       return;
+  //     }
+
+  //     if (response.errorMessage) {
+  //       Alert.alert('ImagePicker Error', response.errorMessage);
+  //       return;
+  //     }
+
+  //     // The selected or captured image
+  //     const asset = response.assets?.[0];
+  //     if (!asset) {
+  //       Alert.alert('Error', 'No image received');
+  //       return;
+  //     }
+
+  //     const {uri: originalUri, width, height} = asset; 
+
+  //     try {
+  //       // Re‑encode as JPEG at lower quality, but keep original dimensions
+  //       const resized = await ImageResizer.createResizedImage(
+  //         originalUri,
+  //         width, 
+  //         height, 
+  //         'JPEG',
+  //         75, 
+  //       );
+
+  //       // Convert to Base64
+  //       const base64Image = await RNFS.readFile(resized.uri, 'base64');
+  //       const imageData = `data:image/jpeg;base64,${base64Image}`;
+
+  //       // Update state
+  //       setUpdatedPhotos(prev =>
+  //         prev.some(p => p.id === id)
+  //           ? prev.map(p =>
+  //               p.id === id
+  //                 ? {id, imageurl: imageData, oldimageurl, unique_id}
+  //                 : p,
+  //             )
+  //           : [...prev, {id, imageurl: imageData, oldimageurl, unique_id}],
+  //       );
+  //     } catch (error) {
+  //       console.log('Error converting image to base64:', error);
+  //       Alert.alert('Error', 'Failed to process image');
+  //     }
+  //   }
+    
+  // };
+
+  const handleConsole = (id, oldimageurl, unique_id) => {
+    Alert.alert(
+      'Select Photo',
+      'Choose an option',
+      [
+        {
+          text: 'Camera',
+          onPress: () => {
+            launchCamera(
+              {mediaType: 'photo', quality: 1, includeExtra: true},
+              async response => {
+                await processConsole(response);
+              },
+            );
+          },
+        },
+        {
+          text: 'Gallery',
+          onPress: () => {
+            launchImageLibrary(
+              {mediaType: 'photo', quality: 1, includeExtra: true},
+              async response => {
+                await processConsole(response);
+              },
+            );
+          },
+        },
+        {text: 'Cancel', style: 'cancel'},
+      ],
+      {cancelable: true},
+    );
+
+    async function processConsole(response) {
+      if (response.didCancel) {
+        Alert.alert('User cancelled image picker');
+        return;
+      }
+
+      if (response.errorMessage) {
+        Alert.alert('ImagePicker Error', response.errorMessage);
+        return;
+      }
+
+      const asset = response.assets?.[0];
+      if (!asset) {
+        Alert.alert('Error', 'No image received');
+        return;
+      }
+
+      const {uri: originalUri, width, height, timestamp, exif} = asset;
+
+      // Get timestamp from EXIF or fallback
+      const imageTimestamp =
+        timestamp ||
+        exif?.DateTimeOriginal ||
+        exif?.CreateDate ||
+        new Date().toISOString();
+
+      try {
+        const resized = await ImageResizer.createResizedImage(
+          originalUri,
+          width,
+          height,
+          'JPEG',
+          75,
+        );
+
+        const base64Image = await RNFS.readFile(resized.uri, 'base64');
+        const imageData = `data:image/jpeg;base64,${base64Image}`;
+
+        setUpdatedPhotos(prev =>
+          prev.some(p => p.id === id)
+            ? prev.map(p =>
+                p.id === id
+                  ? {
+                      id,
+                      imageurl: imageData,
+                      oldimageurl,
+                      unique_id,
+                      timestamp: imageTimestamp,
+                    }
+                  : p,
+              )
+            : [
+                ...prev,
+                {
+                  id,
+                  imageurl: imageData,
+                  oldimageurl,
+                  unique_id,
+                  timestamp: imageTimestamp,
+                },
+              ],
+        );
+      } catch (error) {
+        console.log('Error converting image to base64:', error);
+        Alert.alert('Error', 'Failed to process image');
+      }
+    }
+  };
+  // const handleclickwcc = (id, oldimageurl, unique_id) => {
+  //   Alert.alert(
+  //     'Select Photo',
+  //     'Choose an option',
+  //     [
+  //       {
+  //         text: 'Camera',
+  //         onPress: () => {
+  //           launchCamera({mediaType: 'photo', quality: 1,includeExtra:true}, async response => {
+  //             await processClickWcc(response);
+  //           });
+  //         },
+  //       },
+  //       {
+  //         text: 'Gallery',
+  //         onPress: () => {
+  //           launchImageLibrary(
+  //             {mediaType: 'photo', quality: 1,includeExtra:true},
+  //             async response => {
+  //               await processClickWcc(response);
+  //             },
+  //           );
+  //         },
+  //       },
+  //       {text: 'Cancel', style: 'cancel'},
+  //     ],
+  //     {cancelable: true},
+  //   );
+
+  //   async function processClickWcc(response) {
+  //     if (response.didCancel) {
+  //       Alert.alert('User cancelled image picker');
+  //       return;
+  //     }
+
+  //     if (response.errorMessage) {
+  //       Alert.alert('ImagePicker Error', response.errorMessage);
+  //       return;
+  //     }
+
+  //     const asset = response.assets?.[0];
+  //     if (!asset) {
+  //       Alert.alert('Error', 'No image received');
+  //       return;
+  //     }
+
+  //     const {uri: originalUri, width, height} = asset; // original dimensions
+
+  //     try {
+  //       // Re‑encode at desired quality but keep the same width & height
+  //       const resized = await ImageResizer.createResizedImage(
+  //         originalUri,
+  //         width, // original width
+  //         height, // original height
+  //         'JPEG',
+  //         75, // quality (0–100) – lower for smaller file size
+  //       );
+
+  //       const base64Image = await RNFS.readFile(resized.uri, 'base64');
+  //       const imageData = `data:image/jpeg;base64,${base64Image}`;
+
+  //       setWccudt(prev =>
+  //         prev.some(p => p.id === id)
+  //           ? prev.map(p =>
+  //               p.id === id
+  //                 ? {id, imageurl: imageData, oldimageurl, unique_id}
+  //                 : p,
+  //             )
+  //           : [...prev, {id, imageurl: imageData, oldimageurl, unique_id}],
+  //       );
+  //     } catch (error) {
+  //       console.log('Error converting image to base64:', error);
+  //       Alert.alert('Error', 'Failed to process image');
+  //     }
+  //   }
+    
+  // };
+
+  const handleclickwcc = (id, oldimageurl, unique_id) => {
+    Alert.alert(
+      'Select Photo',
+      'Choose an option',
+      [
+        {
+          text: 'Camera',
+          onPress: () => {
+            launchCamera(
+              {mediaType: 'photo', quality: 1, includeExtra: true},
+              async response => {
+                await processClickWcc(response);
+              },
+            );
+          },
+        },
+        {
+          text: 'Gallery',
+          onPress: () => {
+            launchImageLibrary(
+              {mediaType: 'photo', quality: 1, includeExtra: true},
+              async response => {
+                await processClickWcc(response);
+              },
+            );
+          },
+        },
+        {text: 'Cancel', style: 'cancel'},
+      ],
+      {cancelable: true},
+    );
+
+    async function processClickWcc(response) {
+      if (response.didCancel) {
+        Alert.alert('User cancelled image picker');
+        return;
+      }
+
+      if (response.errorMessage) {
+        Alert.alert('ImagePicker Error', response.errorMessage);
+        return;
+      }
+
+      const asset = response.assets?.[0];
+      if (!asset) {
+        Alert.alert('Error', 'No image received');
+        return;
+      }
+
+      const {uri: originalUri, width, height, timestamp, exif} = asset;
+
+      // Extract timestamp
+      const imageTimestamp =
+        timestamp ||
+        exif?.DateTimeOriginal ||
+        exif?.CreateDate ||
+        new Date().toISOString();
+
+      try {
+        const resized = await ImageResizer.createResizedImage(
+          originalUri,
+          width,
+          height,
+          'JPEG',
+          75,
+        );
+
+        const base64Image = await RNFS.readFile(resized.uri, 'base64');
+        const imageData = `data:image/jpeg;base64,${base64Image}`;
+
+        setWccudt(prev =>
+          prev.some(p => p.id === id)
+            ? prev.map(p =>
+                p.id === id
+                  ? {
+                      id,
+                      imageurl: imageData,
+                      oldimageurl,
+                      unique_id,
+                      timestamp: imageTimestamp,
+                    }
+                  : p,
+              )
+            : [
+                ...prev,
+                {
+                  id,
+                  imageurl: imageData,
+                  oldimageurl,
+                  unique_id,
+                  timestamp: imageTimestamp,
+                },
+              ],
+        );
+      } catch (error) {
+        console.log('Error converting image to base64:', error);
+        Alert.alert('Error', 'Failed to process image');
+      }
     }
   };
   const copyToClipboard = text => {
@@ -238,52 +548,293 @@ const IncScreen = () => {
     Linking.openURL(url).catch(err => console.log('Error opening dialer', err));
   };
   const addPhotoToBox = (index, type) => {
-    console.log('nkj', type);
-    launchCamera({mediaType: 'photo', quality: 0.3}, async response => {
+    Alert.alert(
+      'Select Photo',
+      'Choose an option',
+      [
+        {
+          text: 'Camera',
+          onPress: () => {
+            launchCamera({mediaType: 'photo', quality: 1,includeExtra:true}, async response => {
+              await processAddPhoto(response);
+            });
+          },
+        },
+        {
+          text: 'Gallery',
+          onPress: () => {
+            launchImageLibrary(
+              {mediaType: 'photo', quality: 1,includeExtra:true},
+              async response => {
+                await processAddPhoto(response);
+              },
+            );
+          },
+        },
+        {text: 'Cancel', style: 'cancel'},
+      ],
+      {cancelable: true},
+    );
+
+    // async function processAddPhoto(response) {
+    //   if (response.didCancel) {
+    //     console.log('User cancelled image picker');
+    //     return;
+    //   }
+
+    //   if (response.errorMessage) {
+    //     console.log('ImagePicker Error:', response.errorMessage);
+    //     return;
+    //   }
+
+    //   const asset = response.assets?.[0];
+    //   if (!asset) {
+    //     Alert.alert('Error', 'No image received');
+    //     return;
+    //   }
+
+    //   const {uri, width, height} = asset; // original size
+
+    //   try {
+    //     // Re‑encode JPEG at chosen quality (90), preserving original width/height
+    //     const resized = await ImageResizer.createResizedImage(
+    //       uri,
+    //       width, // original width
+    //       height, // original height
+    //       'JPEG',
+    //       75, // quality (0‑100)
+    //     );
+
+    //     const base64Image = await RNFS.readFile(resized.uri, 'base64');
+    //     const imageData = `data:image/jpeg;base64,${base64Image}`;
+
+    //     const updatedPhotos = [...selectedPhotos];
+    //     updatedPhotos[index] = {uri, type, imageData};
+
+    //     // Add an empty slot at the end if the current photo is the last one
+    //     if (index === selectedPhotos.length - 1) {
+    //       updatedPhotos.push({uri: null, type, imageData: null});
+    //     }
+
+    //     setSelectedPhotos(updatedPhotos);
+    //   } catch (error) {
+    //     console.log('Error processing image:', error);
+    //     Alert.alert('Error', 'Failed to process image');
+    //   }
+    // }
+    async function processAddPhoto(response) {
       if (response.didCancel) {
         console.log('User cancelled image picker');
-      } else if (response.errorMessage) {
-        console.log('ImagePicker Error: ', response.errorMessage);
-      } else {
-        const uri = response.assets?.[0]?.uri;
-        if (uri) {
-          const base64Image = await RNFS.readFile(uri, 'base64');
-          const imageData = `data:image/jpeg;base64,${base64Image}`;
-          const updatedPhotos = [...selectedPhotos];
-          updatedPhotos[index] = {uri, type, imageData};
-
-          if (index === selectedPhotos.length - 1) {
-            updatedPhotos.push({uri: null, type, imageData});
-          }
-
-          setSelectedPhotos(updatedPhotos);
-        }
+        return;
       }
-    });
+
+      if (response.errorMessage) {
+        console.log('ImagePicker Error:', response.errorMessage);
+        return;
+      }
+
+      const asset = response.assets?.[0];
+      if (!asset) {
+        Alert.alert('Error', 'No image received');
+        return;
+      }
+
+      const {uri, width, height, timestamp, exif} = asset;
+
+      // Extract timestamp
+      const imageTimestamp =
+        timestamp ||
+        exif?.DateTimeOriginal ||
+        exif?.CreateDate ||
+        new Date().toISOString();
+
+      try {
+        const resized = await ImageResizer.createResizedImage(
+          uri,
+          width,
+          height,
+          'JPEG',
+          75,
+        );
+
+        const base64Image = await RNFS.readFile(resized.uri, 'base64');
+        const imageData = `data:image/jpeg;base64,${base64Image}`;
+
+        const updatedPhotos = [...selectedPhotos];
+
+        updatedPhotos[index] = {
+          uri,
+          type,
+          imageData,
+          timestamp: imageTimestamp,
+        };
+
+        // Add empty slot if last photo
+        if (index === selectedPhotos.length - 1) {
+          updatedPhotos.push({
+            uri: null,
+            type,
+            imageData: null,
+            timestamp: null,
+          });
+        }
+
+        setSelectedPhotos(updatedPhotos);
+      } catch (error) {
+        console.log('Error processing image:', error);
+        Alert.alert('Error', 'Failed to process image');
+      }
+    }
+    
   };
-  const addPhotoToBoxAfter = (index, type) => {
-    console.log(type);
-    launchCamera({mediaType: 'photo', quality: 0.3}, async response => {
+  const addPhotoToBoxAfter = (
+    index,
+    type
+  ) => {
+    Alert.alert(
+      'Select Photo',
+      'Choose an option',
+      [
+        {
+          text: 'Camera',
+          onPress: () => {
+            launchCamera({mediaType: 'photo', quality: 1,includeExtra:true}, async response => {
+              await processAddPhoto(response);
+            });
+          },
+        },
+        {
+          text: 'Gallery',
+          onPress: () => {
+            launchImageLibrary(
+              {mediaType: 'photo', quality: 1,includeExtra:true},
+              async response => {
+                await processAddPhoto(response);
+              },
+            );
+          },
+        },
+        {text: 'Cancel', style: 'cancel'},
+      ],
+      {cancelable: true},
+    );
+
+    // async function processAddPhoto(response) {
+    //   if (response.didCancel) {
+    //     console.log('User cancelled image picker');
+    //     return;
+    //   }
+
+    //   if (response.errorMessage) {
+    //     console.log('ImagePicker Error:', response.errorMessage);
+    //     return;
+    //   }
+
+    //   const asset = response.assets?.[0];
+    //   if (!asset) {
+    //     Alert.alert('Error', 'No image received');
+    //     return;
+    //   }
+
+    //   const {uri, width, height} = asset; // Get original image dimensions
+
+    //   try {
+    //     // Compress the image using original dimensions and desired quality
+    //     const resized = await ImageResizer.createResizedImage(
+    //       uri,
+    //       width,
+    //       height,
+    //       'JPEG',
+    //       75,
+    //     );
+
+    //     const base64Image = await RNFS.readFile(resized.uri, 'base64');
+    //     const imageData = `data:image/jpeg;base64,${base64Image}`;
+
+    //     const updatedPhotos = [...selectedPhotosAfter];
+    //     updatedPhotos[index] = {uri, type, imageData};
+
+    //     if (index === selectedPhotosAfter.length - 1) {
+    //       updatedPhotos.push({uri: null, type, imageData: null});
+    //     }
+
+    //     setSelectedPhotosAfter(updatedPhotos);
+    //   } catch (error) {
+    //     console.log('Error processing image:', error);
+    //     Alert.alert('Error', 'Failed to process image');
+    //   }
+    // }
+    async function processAddPhoto(response) {
       if (response.didCancel) {
         console.log('User cancelled image picker');
-      } else if (response.errorMessage) {
-        console.log('ImagePicker Error: ', response.errorMessage);
-      } else {
-        const uri = response.assets?.[0]?.uri;
-        if (uri) {
-          const base64Image = await RNFS.readFile(uri, 'base64');
-          const imageData = `data:image/jpeg;base64,${base64Image}`;
-          const updatedPhotos = [...selectedPhotosAfter];
-          updatedPhotos[index] = {uri, type, imageData};
-
-          // Add new empty slot if last box was just filled
-          if (index === selectedPhotosAfter.length - 1) {
-            updatedPhotos.push({uri: null, type, imageData});
-          }
-
-          setSelectedPhotosAfter(updatedPhotos);
-        }
+        return;
       }
+
+      if (response.errorMessage) {
+        console.log('ImagePicker Error:', response.errorMessage);
+        return;
+      }
+
+      const asset = response.assets?.[0];
+      if (!asset) {
+        Alert.alert('Error', 'No image received');
+        return;
+      }
+
+      const {uri, width, height, timestamp, exif} = asset;
+
+      // Extract timestamp from image
+      const imageTimestamp =
+        timestamp ||
+        exif?.DateTimeOriginal ||
+        exif?.CreateDate ||
+        new Date().toISOString();
+
+      try {
+        const resized = await ImageResizer.createResizedImage(
+          uri,
+          width,
+          height,
+          'JPEG',
+          75,
+        );
+
+        const base64Image = await RNFS.readFile(resized.uri, 'base64');
+        const imageData = `data:image/jpeg;base64,${base64Image}`;
+
+        const updatedPhotos = [...selectedPhotosAfter];
+
+        updatedPhotos[index] = {
+          uri,
+          type,
+          imageData,
+          timestamp: imageTimestamp,
+        };
+
+        if (index === selectedPhotosAfter.length - 1) {
+          updatedPhotos.push({
+            uri: null,
+            type,
+            imageData: null,
+            timestamp: null,
+          });
+        }
+
+        setSelectedPhotosAfter(updatedPhotos);
+      } catch (error) {
+        console.log('Error processing image:', error);
+        Alert.alert('Error', 'Failed to process image');
+      }
+    }
+    
+  };
+  
+  const showToast = (title, message) => {
+    ToastAndroid.show(`${title + ' ' + message}`, ToastAndroid.SHORT);
+    Toast.show({
+      type: 'success',
+      text1: title,
+      text2: message,
     });
   };
   const handleEditsite = async () => {
@@ -314,8 +865,8 @@ const IncScreen = () => {
 
       if (response.status) {
         navigation.navigate('BookingScreen');
-        
-        Alert.alert('Updated Succesfully');
+        showToast('Updated Succesfully', '');
+        // Alert.alert('Updated Succesfully');
       } else {
         console.log('Response data is missing.');
       }
@@ -340,10 +891,11 @@ const IncScreen = () => {
           style={styles.backButton}>
           <Back width={24} height={24} rotation={90} fill={'white'} />
         </TouchableOpacity>
+        <Toast></Toast>
         <View style={styles.statusbarsection}>
           <Text style={styles.headerText}>SITE DETAIL</Text>
 
-          {itemState && (
+          {itemState && profile?.designation === 'technician' && (
             <View>
               <TouchableOpacity onPress={handleEdit}>
                 <View style={styles.editButton}>
@@ -450,7 +1002,7 @@ const IncScreen = () => {
               placeholder="Enter Complain Remarks"
               placeholderTextColor={'#888'}
               value={visitRemark}
-              editable={isEditable}
+              editable={false}
               onChangeText={text => setvisitRemark(text)}
             />
           </>
@@ -535,7 +1087,7 @@ const IncScreen = () => {
             <TextInput
               style={[styles.searchInput, {marginTop: 0, marginBottom: 10}]}
               placeholder="Enter Actual Remark"
-              placeholderTextColor="#888"
+              placeholderTextColor="black"
               value={ActualRemark}
               editable={isEditable}
               onChangeText={text => setActualRemark(text)}
@@ -609,20 +1161,30 @@ const IncScreen = () => {
             <Text style={styles.flightPrice}>Update photo</Text>
           </TouchableOpacity>
         )}
-        {!isEditable && (
+
+        {(item?.remark_soc == null && item.request_close_time==null) && profile?.designation == 'technician' ? (
           <TouchableOpacity
             style={[styles.flightCard, {backgroundColor: color}]}
             onPress={() =>
-              navigation.navigate('SiteDetail', {
+              navigation.navigate('wccEdit', {
                 imei: item.imei,
+                item,
+                serviceType: item?.service_type,
+                complainNo: item?.complain_no,
+                technicianName: profile?.name,
+                uniqueId: item?.unique_id,
                 mode: false,
                 version: version,
                 color: color,
               })
             }>
-            <Text style={styles.flightPrice}>Site Detail</Text>
+            <Text style={styles.flightPrice}>Fill Wcc</Text>
           </TouchableOpacity>
+        ) : (
+          ''
         )}
+
+       
 
         <View style={{marginBottom: 30}}></View>
       </ScrollView>
@@ -765,6 +1327,7 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     borderWidth: 1,
+    color: 'black',
     borderColor: '#007aff',
     borderRadius: 8,
     padding: 12,
@@ -886,7 +1449,7 @@ const styles = StyleSheet.create({
     width: '90%',
   },
   text: {
-    color: 'white',
+    color: 'black',
     fontWeight: 'bold',
   },
   link: {

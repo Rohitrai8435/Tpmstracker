@@ -9,6 +9,7 @@ export const ImeiContext = createContext();
 // Create a provider component
 export const ImeiProvider = ({children}) => {
   const [options, setOptions] = useState(null);
+  const [before, setbefore] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
@@ -45,6 +46,8 @@ export const ImeiProvider = ({children}) => {
   }, [isConnected]); // Re-run this effect when `isConnected` changes
 
   return (
-    <ImeiContext.Provider value={{options}}>{children}</ImeiContext.Provider>
+    <ImeiContext.Provider value={{options, before, setbefore, setOptions}}>
+      {children}
+    </ImeiContext.Provider>
   );
 };

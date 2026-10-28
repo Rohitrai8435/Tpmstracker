@@ -10,6 +10,7 @@ import Privacy from './src/Privacy';
 import Profile from './src/Profile';
 import IncService from './src/IncService';
 import RevisitService from './src/RevisitService';
+import TestSystem from './src/TestSystem';
 import AnyUpdate from './src/AnyUpdate';
 import IncDone from './src/IncDone';
 import IncNotClose from './src/IncNotClose';
@@ -24,6 +25,9 @@ import IncTeam from './src/screen/IncTeam';
 import Location from './src/screen/Location';
 import PendingRemark from './src/screen/PendingRemark';
 import SiteInstallationForm from './src/component/SiteInstallationForm';
+import EditWcc from './src/component/EditWcc';
+import SubmitComplaint from './src/SubmitComplaint';
+import CheckComplaint from './src/CheckComplaint';
 const Stack = createStackNavigator();
 
 const App = () => {
@@ -57,6 +61,11 @@ const App = () => {
             options={{headerShown: false}}
           />
           <Stack.Screen
+            name="wccEdit"
+            component={EditWcc}
+            options={{headerShown: false}}
+          />
+          <Stack.Screen
             name="About"
             component={About}
             options={{headerShown: false}}
@@ -79,6 +88,11 @@ const App = () => {
           <Stack.Screen
             name="Revisit"
             component={RevisitService}
+            options={{headerShown: false}}
+          />
+          <Stack.Screen
+            name="TestSystem"
+            component={TestSystem}
             options={{headerShown: false}}
           />
           <Stack.Screen
@@ -139,6 +153,16 @@ const App = () => {
           <Stack.Screen
             name="Pending"
             component={PendingRemark}
+            options={{headerShown: false}}
+          />
+          <Stack.Screen
+            name="SubmitComplaint"
+            component={SubmitComplaint}
+            options={{headerShown: false}}
+          />
+          <Stack.Screen
+            name="CheckComplaint"
+            component={CheckComplaint}
             options={{headerShown: false}}
           />
         </Stack.Navigator>

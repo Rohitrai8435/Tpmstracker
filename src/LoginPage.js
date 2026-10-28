@@ -38,7 +38,6 @@ export default function LoginPage() {
           index: 0,
           routes: [{name: 'BookingScreen'}],
         });
-        //navigation.navigate('BookingScreen');
       } else {
         setIsLoading(false); // Hide loading dialog
         Alert.alert('Login Failed', 'Invalid id or password.');

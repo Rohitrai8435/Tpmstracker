@@ -17,7 +17,15 @@ const LocalApi = axios.create({
 export const getData = async tech_id => {
   try {
     const response = await LocalApi.post('detail_tpms', {tech_id});
-    return response.data;
+    return response?.data;
+  } catch (error) {
+    throw error;
+  }
+};
+export const get_wcc_data = async unique_id => {
+  try {
+    const response = await LocalApi.post('get_wcc_data', {unique_id});
+    return response?.data;
   } catch (error) {
     throw error;
   }
@@ -86,6 +94,22 @@ export const getDataSoc = async tech_id => {
     throw error;
   }
 };
+export const get_gps_current_status = async gps_imei => {
+  try {
+    const response = await LocalApi.post('get_gps_current_status', {gps_imei});
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+export const get_tpms_current_status = async tpms_imei => {
+  try {
+    const response = await LocalApi.post('get_tpms_current_status', {tpms_imei});
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
 const createRequestConfig = signal => (signal ? {signal} : {});
 
 export const getImei = async signal => {
@@ -94,6 +118,49 @@ export const getImei = async signal => {
       'imei_list', // API endpoint
       {}, // Empty payload
       createRequestConfig(signal), // Correct configuration placement
+    );
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+export const get_all_sites_product = async (
+  signal,
+  product_id,
+  service_type,
+  profile,
+  search = '',
+  limit = 50,
+) => {
+  try {
+    const response = await LocalApi.post(
+      'get_all_sites_product',
+      {product_id,service_type,profile,search,limit},
+      createRequestConfig(signal),
+    );
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+export const get_all_product = async (signal) => {
+  try {
+    const response = await LocalApi.post(
+      'get_all_product',
+      {},
+      createRequestConfig(signal),
+    );
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+export const get_qc_master = async (signal, assignCircle, designation) => {
+  try {
+    const response = await LocalApi.post(
+      'get_qc_master',
+      {assignCircle, designation},
+      createRequestConfig(signal),
     );
     return response.data;
   } catch (error) {
@@ -119,7 +186,20 @@ export const getmaterailName = async signal => {
       {}, // Empty payload
       createRequestConfig(signal), // Correct configuration placement
     );
-    
+
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+export const getmaterailUnit = async signal => {
+  try {
+    const response = await LocalApi.post(
+      'get_matrail_unit_list', // API endpoint
+      {}, // Empty payload
+      createRequestConfig(signal), // Correct configuration placement
+    );
+
     return response.data;
   } catch (error) {
     throw error;
@@ -155,6 +235,43 @@ export const getLogin = async (id, password) => {
     throw error;
   }
 };
+export const submit_qc_complaint = async payload => {
+  try {
+    const response = await LocalApi.post('submit_qc_complaint', {payload});
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const get_complaints = async (user_id, designation) => {
+  try {
+    const response = await LocalApi.post('get_complaints', {
+      user_id,
+      designation,
+    });
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const cancel_complaint = async payload => {
+  try {
+    const response = await LocalApi.post('cancel_complaint', {payload});
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+export const update_complaint = async payload => {
+  try {
+    const response = await LocalApi.post('update_complaint', payload); // ✅ FIX
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
 // export const login = async (login_id, password) => {
 //   try {
 //     const response = await ApiService.post('loginTwo', { login_id, password });
@@ -184,212 +301,20 @@ export const getSiteDetail = async imei => {
     throw error;
   }
 };
-
-export const getSiteDetailV2 = async imei => {
+export const get_complaint_categories = async () => {
   try {
-    const response = await ApiService.post('new_getimei_nu', {imei});
-    return response?.data;
-  } catch (error) {
-    throw error;
-  }
-};
-export const hooter_on_off = async (imei, hooter_onoff) => {
-  try {
-    const response = await ApiService.post('hooter_on_off', {
-      imei,
-      hooter_onoff,
-    });
-    return response?.data;
-  } catch (error) {
-    throw error;
-  }
-};
-export const insert_Hooter_log = async (imei, aid, login_id, status) => {
-  try {
-    const response = await ApiService.post('insert_Hooter_log', {
-      imei,
-      aid,
-      login_id,
-      status,
-    });
+    const response = await LocalApi.post('getComplaintCategories');
     return response?.data;
   } catch (error) {
     throw error;
   }
 };
 
-export const getSiteDetailv1 = async imei => {
-  try {
-    const response = await ApiService.post('new_getimei_nuV1', {imei});
-    return response?.data;
-  } catch (error) {
-    throw error;
-  }
-};
-export const getAlarmV1 = async imei => {
-  try {
-    const response = await ApiService.post('new_alarm_V1', {imei});
-    return response?.data;
-  } catch (error) {
-    throw error;
-  }
-};
-export const getLogReport = async (
-  imei,
-  aid,
-  ctm_id,
-  s_date,
-  e_date,
-  usertype,
-  client_version,
-) => {
-  try {
-    const response = await ApiService.post('getAlarmLogByImei', {
-      imei,
-      aid,
-      ctm_id,
-      s_date,
-      e_date,
-      usertype,
-      client_version,
-    });
-    return response?.data;
-  } catch (error) {
-    throw error;
-  }
-};
 
-export const getSiteRunningSource = async (
-  aidv4,
-  ctm_idv4,
-  usertypev4,
-  state_id,
-  dist_id,
-  cluster_id,
-  aidv2,
-  ctm_idv2,
-  usertypev2,
-) => {
-  try {
-    const response = await ApiService.post('new_siteRunningSource', {
-      aidv4,
-      ctm_idv4,
-      usertypev4,
-      state_id,
-      dist_id,
-      cluster_id,
-      aidv2,
-      ctm_idv2,
-      usertypev2,
-    });
-    return response?.data;
-  } catch (error) {
-    throw error;
-  }
-};
-export const siteRunning = async (
-  aidv4,
-  ctm_idv4,
-  usertypev4,
-  state_id,
-  dist_id,
-  cluster_id,
-  aidv2,
-  ctm_idv2,
-  usertypev2,
-) => {
-  try {
-    const response = await ApiService.post('new_siteRunning', {
-      aidv4,
-      ctm_idv4,
-      usertypev4,
-      state_id,
-      dist_id,
-      cluster_id,
-      aidv2,
-      ctm_idv2,
-      usertypev2,
-    });
-    return response?.data;
-  } catch (error) {
-    throw error;
-  }
-};
-export const getcurrentAlarmByImei = async imei => {
-  try {
-    const response = await ApiService.post('new_getcurrentAlarmByImeiV4', {
-      imei,
-    });
-    return response?.data;
-  } catch (error) {
-    throw error;
-  }
-};
-export const getcurrentAlarmByImeiv2 = async imei => {
-  try {
-    const response = await ApiService.post('new_getcurrentAlarmByImei', {imei});
-    return response?.data;
-  } catch (error) {
-    throw error;
-  }
-};
-export const notification = async (
-  aidv1,
-  aidv2,
-  aidv4,
-  userv1,
-  userv2,
-  userv4,
-  value,
-) => {
-  try {
-    const response = await ApiService.post('noncom2hour', {
-      aidv1,
-      aidv2,
-      aidv4,
-      userv1,
-      userv2,
-      userv4,
-      value,
-    });
-    return response?.data;
-  } catch (error) {
-    throw error;
-  }
-};
 
-export const dcem_analytics = async imei => {
-  try {
-    const response = await ApiService.post('dcem_analytics', {imei});
-    return response?.data;
-  } catch (error) {
-    throw error;
-  }
-};
-export const dg_on_off = async (imei, value) => {
-  try {
-    const response = await ApiService.post('dg_on_off', {imei, value});
-    return response?.data;
-  } catch (error) {
-    throw error;
-  }
-};
-export const auto_manul = async (imei, value) => {
-  try {
-    const response = await ApiService.post('auto_manul', {imei, value});
-    return response?.data;
-  } catch (error) {
-    throw error;
-  }
-};
-export const auto_manual_show = async imei => {
-  try {
-    const response = await ApiService.post('auto_manual_show', {imei});
-    return response?.data;
-  } catch (error) {
-    throw error;
-  }
-};
+
+
+
 
 export const imei_list = async () => {
   try {
